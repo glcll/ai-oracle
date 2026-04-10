@@ -1,6 +1,14 @@
-projectName: ai-oracle
-rpcs:
-  ethereum-mainnet:
-    url: ${CRE_ETH_MAINNET_RPC}
-  ethereum-sepolia:
-    url: ${CRE_ETH_SEPOLIA_RPC}
+# CRE Project Settings
+staging-settings:
+  rpcs:
+    - chain-name: ethereum-testnet-sepolia
+      url: https://ethereum-sepolia-rpc.publicnode.com
+    - chain-name: ethereum-mainnet
+      url: https://ethereum-rpc.publicnode.com
+
+simulation-settings:
+  rpcs:
+    - chain-name: ethereum-testnet-sepolia
+      url: https://ethereum-sepolia-rpc.publicnode.com
+    - chain-name: ethereum-mainnet
+      url: https://ethereum-rpc.publicnode.com

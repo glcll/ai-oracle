@@ -12,6 +12,7 @@ import {
   handler,
   Runner,
   ConsensusAggregationByFields,
+  consensusIdenticalAggregation,
   median,
   ignore,
   type Runtime,
@@ -32,6 +33,7 @@ const ConfigSchema = z.object({
   webhookUrl: z.string(),
   temperature: z.number(),
   maxTokens: z.number(),
+  authorizedAddress: z.string().optional(),
 });
 
 type Config = z.infer<typeof ConfigSchema>;
@@ -65,6 +67,46 @@ type OracleNodeResult = {
 // Helpers
 // ---------------------------------------------------------------------------
 
+const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+function toBase64(str: string): string {
+  const bytes = stringToBytes(str);
+  let result = "";
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b0 = bytes[i];
+    const b1 = i + 1 < bytes.length ? bytes[i + 1] : 0;
+    const b2 = i + 2 < bytes.length ? bytes[i + 2] : 0;
+    result += B64[(b0 >> 2) & 0x3f];
+    result += B64[((b0 << 4) | (b1 >> 4)) & 0x3f];
+    result += i + 1 < bytes.length ? B64[((b1 << 2) | (b2 >> 6)) & 0x3f] : "=";
+    result += i + 2 < bytes.length ? B64[b2 & 0x3f] : "=";
+  }
+  return result;
+}
+
+function stringToBytes(str: string): number[] {
+  const bytes: number[] = [];
+  for (let i = 0; i < str.length; i++) {
+    let c = str.charCodeAt(i);
+    if (c < 0x80) {
+      bytes.push(c);
+    } else if (c < 0x800) {
+      bytes.push(0xc0 | (c >> 6), 0x80 | (c & 0x3f));
+    } else {
+      bytes.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f));
+    }
+  }
+  return bytes;
+}
+
+function bytesToString(bytes: Uint8Array): string {
+  let result = "";
+  for (let i = 0; i < bytes.length; i++) {
+    result += String.fromCharCode(bytes[i]);
+  }
+  return result;
+}
+
 function parseJsonFromText(raw: string): Record<string, unknown> | null {
   const match = raw.match(/\{[\s\S]*\}/);
   if (!match) return null;
@@ -94,8 +136,9 @@ function queryModelsAndJudge(
   // For now this is structured to show the pattern; in practice the prompt would be
   // injected into config or fetched from a shared location.
 
-  const prompt = (config as Config & { _prompt?: string })._prompt ?? "Hello";
-  const apiKey = "{{.OPENROUTER_KEY}}"; // Injected by CRE secrets engine
+  const extConfig = config as Config & { _prompt?: string; _apiKey?: string };
+  const prompt = extConfig._prompt ?? "Hello";
+  const apiKey = extConfig._apiKey ?? "";
 
   // Phase 1: Generation — call all 3 models
   const generationSystemPrompt =
@@ -115,7 +158,7 @@ function queryModelsAndJudge(
           Authorization: `Bearer ${apiKey}`,
           "X-Title": "AI Oracle CRE",
         },
-        body: JSON.stringify({
+        body: toBase64(JSON.stringify({
           model: config.models[i],
           messages: [
             { role: "system", content: generationSystemPrompt },
@@ -123,11 +166,11 @@ function queryModelsAndJudge(
           ],
           temperature: config.temperature,
           max_tokens: config.maxTokens,
-        }),
+        })),
       })
       .result();
 
-    const raw = JSON.parse(res.body.toString())?.choices?.[0]?.message?.content ?? "";
+    const raw = JSON.parse(bytesToString(res.body))?.choices?.[0]?.message?.content ?? "";
     responses.push(raw);
 
     const parsed = parseJsonFromText(raw);
@@ -160,7 +203,7 @@ Return: { "score_1": <int 1-10>, "score_2": <int 1-10>, "score_3": <int 1-10> }`
           Authorization: `Bearer ${apiKey}`,
           "X-Title": "AI Oracle CRE",
         },
-        body: JSON.stringify({
+        body: toBase64(JSON.stringify({
           model: config.models[j],
           messages: [
             { role: "system", content: judgeSystemPrompt },
@@ -168,11 +211,11 @@ Return: { "score_1": <int 1-10>, "score_2": <int 1-10>, "score_3": <int 1-10> }`
           ],
           temperature: 0.1,
           max_tokens: 256,
-        }),
+        })),
       })
       .result();
 
-    const judgeRaw = JSON.parse(judgeRes.body.toString())?.choices?.[0]?.message?.content ?? "";
+    const judgeRaw = JSON.parse(bytesToString(judgeRes.body))?.choices?.[0]?.message?.content ?? "";
     const parsed = parseJsonFromText(judgeRaw);
 
     scores[j] = [
@@ -206,7 +249,6 @@ Return: { "score_1": <int 1-10>, "score_2": <int 1-10>, "score_3": <int 1-10> }`
 // ---------------------------------------------------------------------------
 
 const oracleAggregation = ConsensusAggregationByFields<OracleNodeResult>({
-  // 3x3 score matrix: median across all DON nodes per cell
   judge_0_score_0: median,
   judge_0_score_1: median,
   judge_0_score_2: median,
@@ -216,32 +258,35 @@ const oracleAggregation = ConsensusAggregationByFields<OracleNodeResult>({
   judge_2_score_0: median,
   judge_2_score_1: median,
   judge_2_score_2: median,
-  // Text responses: not consensus-critical, carried from one node
   response_0: ignore,
   response_1: ignore,
   response_2: ignore,
   confidence_0: median,
   confidence_1: median,
   confidence_2: median,
-});
+} as any);
 
 // ---------------------------------------------------------------------------
 // HTTP trigger handler
 // ---------------------------------------------------------------------------
 
 function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): string {
-  const input = JSON.parse(new TextDecoder().decode(payload.input));
+  const input = JSON.parse(bytesToString(payload.input));
   const { prompt, requestId, callbackUrl } = input;
 
   runtime.log(`Received prompt: ${prompt} (requestId: ${requestId})`);
 
+  // Fetch secrets in DON mode (all nodes get the same value)
+  const openRouterSecret = runtime.getSecret({ id: "OPENROUTER_KEY" }).result();
+  const webhookTokenSecret = runtime.getSecret({ id: "WEBHOOK_TOKEN" }).result();
+  const apiKey = openRouterSecret.value;
+  const webhookSecret = webhookTokenSecret.value;
+
   // Run the 3-model + 3-judge evaluation on each node with consensus
   const httpClient = new HTTPClient();
+  const configWithPrompt = { ...runtime.config, _prompt: prompt, _apiKey: apiKey } as Config;
   const result = httpClient
-    .sendRequest(runtime, queryModelsAndJudge, oracleAggregation)(
-      // Inject prompt into config since sendRequest callback only receives config
-      { ...runtime.config, _prompt: prompt } as Config,
-    )
+    .sendRequest(runtime, queryModelsAndJudge, oracleAggregation)(configWithPrompt)
     .result();
 
   // Compute winner deterministically from consensus scores
@@ -275,23 +320,28 @@ function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): string {
 
   // Deliver result to the API webhook
   const webhookUrl = callbackUrl || runtime.config.webhookUrl;
-  const webhookSecret = "{{.WEBHOOK_TOKEN}}";
+  const webhookHttpClient = new HTTPClient();
 
-  httpClient
-    .sendRequest(runtime, (sr: HTTPSendRequester) => {
-      return sr
-        .sendRequest({
-          url: webhookUrl,
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${webhookSecret}`,
-          },
-          body: webhookPayload,
-          cacheSettings: { readFromCache: false, maxAgeMs: 0 },
-        })
-        .result();
-    }, oracleAggregation)(runtime.config)
+  webhookHttpClient
+    .sendRequest(
+      runtime,
+      (sr: HTTPSendRequester): string => {
+        const res = sr
+          .sendRequest({
+            url: webhookUrl,
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${webhookSecret}`,
+            },
+            body: toBase64(webhookPayload),
+            cacheSettings: { store: false },
+          })
+          .result();
+        return bytesToString(res.body);
+      },
+      consensusIdenticalAggregation<string>(),
+    )()
     .result();
 
   return `Oracle consensus complete. Winner: model ${winnerIndex} (requestId: ${requestId})`;
@@ -303,7 +353,16 @@ function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): string {
 
 function initWorkflow(config: Config) {
   const http = new HTTPCapability();
-  return [handler(http.trigger({}), onHttpTrigger)];
+
+  const triggerConfig = config.authorizedAddress
+    ? {
+        authorizedKeys: [
+          { type: "KEY_TYPE_ECDSA_EVM" as const, publicKey: config.authorizedAddress },
+        ],
+      }
+    : {};
+
+  return [handler(http.trigger(triggerConfig), onHttpTrigger)];
 }
 
 export async function main() {
