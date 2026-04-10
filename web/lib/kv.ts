@@ -1,6 +1,12 @@
+import { Redis } from "@upstash/redis";
 import type { OracleResult } from "./types";
 
-const store = new Map<string, OracleResult>();
+function getRedis(): Redis | null {
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+  if (!url || !token) return null;
+  return new Redis({ url, token });
+}
 
 export function generateRequestId(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -14,18 +20,17 @@ export function generateRequestId(): string {
 export async function getResult(
   requestId: string
 ): Promise<OracleResult | null> {
-  if (process.env.KV_REST_API_URL) {
-    const { kv } = await import("@vercel/kv");
-    return kv.get<OracleResult>(`oracle:${requestId}`);
+  const redis = getRedis();
+  if (redis) {
+    return redis.get<OracleResult>(`oracle:${requestId}`);
   }
-  return store.get(requestId) ?? null;
+  return null;
 }
 
 export async function setResult(result: OracleResult): Promise<void> {
-  if (process.env.KV_REST_API_URL) {
-    const { kv } = await import("@vercel/kv");
-    await kv.set(`oracle:${result.requestId}`, result, { ex: 3600 });
+  const redis = getRedis();
+  if (redis) {
+    await redis.set(`oracle:${result.requestId}`, result, { ex: 3600 });
     return;
   }
-  store.set(result.requestId, result);
 }

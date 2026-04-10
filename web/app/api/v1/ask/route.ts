@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { generateRequestId, setResult } from "@/lib/kv";
 import { triggerCREWorkflow } from "@/lib/cre-trigger";
 import { runOracleConsensus } from "@/lib/oracle-engine";
@@ -70,15 +70,28 @@ export async function POST(request: Request) {
     request.headers.get("origin") ??
     "http://localhost:3000";
 
-  if (process.env.CRE_WORKFLOW_ID) {
-    triggerCREWorkflow({
-      prompt,
-      requestId,
-      callbackUrl: `${baseUrl}/api/v1/webhook`,
-    }).catch(console.error);
-  } else {
-    runOracleConsensus(requestId, prompt).catch(console.error);
-  }
+  after(async () => {
+    try {
+      if (process.env.CRE_WORKFLOW_ID) {
+        await triggerCREWorkflow({
+          prompt,
+          requestId,
+          callbackUrl: `${baseUrl}/api/v1/webhook`,
+        });
+      } else {
+        await runOracleConsensus(requestId, prompt);
+      }
+    } catch (err) {
+      console.error("Oracle processing failed:", err);
+      await setResult({
+        requestId,
+        status: "failed",
+        prompt,
+        timing: { submittedAt: now, completedAt: new Date().toISOString() },
+        error: String(err),
+      });
+    }
+  });
 
   return NextResponse.json(
     {
