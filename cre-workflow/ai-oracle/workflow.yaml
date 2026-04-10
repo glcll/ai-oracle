@@ -1,0 +1,7 @@
+name: ai-oracle
+targets:
+  staging:
+    configFile: config.staging.json
+  simulation:
+    configFile: config.json
+secrets: secrets.yaml

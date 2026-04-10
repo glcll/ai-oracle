@@ -1,0 +1,6 @@
+projectName: ai-oracle
+rpcs:
+  ethereum-mainnet:
+    url: ${CRE_ETH_MAINNET_RPC}
+  ethereum-sepolia:
+    url: ${CRE_ETH_SEPOLIA_RPC}
