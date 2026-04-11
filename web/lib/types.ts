@@ -1,21 +1,21 @@
 export const MODELS = [
   {
-    id: "llama-3.3-70b",
-    name: "Llama 3.3 70B",
-    openRouterId: "meta-llama/llama-3.3-70b-instruct:free",
+    id: "gemma-3-12b",
+    name: "Gemma 3 12B",
+    openRouterId: "google/gemma-3-12b-it:free",
+    provider: "Google",
+  },
+  {
+    id: "llama-3.2-3b",
+    name: "Llama 3.2 3B",
+    openRouterId: "meta-llama/llama-3.2-3b-instruct:free",
     provider: "Meta",
   },
   {
-    id: "nemotron-super-120b",
-    name: "Nemotron 3 Super 120B",
-    openRouterId: "nvidia/nemotron-3-super-120b-a12b:free",
-    provider: "NVIDIA",
-  },
-  {
-    id: "qwen3-next-80b",
-    name: "Qwen3 Next 80B",
-    openRouterId: "qwen/qwen3-next-80b-a3b-instruct:free",
-    provider: "Alibaba",
+    id: "gemma-3n-4b",
+    name: "Gemma 3n 4B",
+    openRouterId: "google/gemma-3n-e4b-it:free",
+    provider: "Google",
   },
 ] as const;
 

@@ -68,11 +68,11 @@ export async function runOracleConsensus(
   const submittedAt = new Date().toISOString();
   try {
     // Phase 1: Query all 3 models
-    const generationPrompt = `Answer the following question thoughtfully and concisely. Respond with valid JSON only: { "answer": "your detailed answer here", "confidence": <integer 1-10> }`;
+    const generationPrompt = `Answer concisely. Respond ONLY with JSON: { "answer": "your answer", "confidence": <1-10> }`;
 
     const rawResponses = await Promise.all(
       MODELS.map((m) =>
-        callModel(m.openRouterId, generationPrompt, prompt, apiKey)
+        callModel(m.openRouterId, generationPrompt, prompt, apiKey, 256)
       )
     );
 
