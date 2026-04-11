@@ -27,6 +27,12 @@ async function callModel(
     }),
   });
 
+  if (res.status === 429) {
+    const wait = Math.min(parseInt(res.headers.get("retry-after") || "5", 10), 15) * 1000;
+    await new Promise((r) => setTimeout(r, wait));
+    return callModel(modelId, systemPrompt, userPrompt, apiKey);
+  }
+
   if (!res.ok) {
     const errText = await res.text();
     throw new Error(`OpenRouter ${res.status}: ${errText}`);

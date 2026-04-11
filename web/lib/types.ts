@@ -6,10 +6,10 @@ export const MODELS = [
     provider: "Meta",
   },
   {
-    id: "gemma-3-27b",
-    name: "Gemma 3 27B",
-    openRouterId: "google/gemma-3-27b-it:free",
-    provider: "Google",
+    id: "nemotron-super-120b",
+    name: "Nemotron 3 Super 120B",
+    openRouterId: "nvidia/nemotron-3-super-120b-a12b:free",
+    provider: "NVIDIA",
   },
   {
     id: "qwen3-next-80b",
