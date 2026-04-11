@@ -1,21 +1,21 @@
 export const MODELS = [
   {
-    id: "llama-3.2-3b",
-    name: "Llama 3.2 3B",
-    openRouterId: "meta-llama/llama-3.2-3b-instruct:free",
-    provider: "Meta",
-  },
-  {
     id: "nemotron-nano-9b",
     name: "Nemotron Nano 9B",
     openRouterId: "nvidia/nemotron-nano-9b-v2:free",
     provider: "NVIDIA",
   },
   {
-    id: "gemma-4-26b",
-    name: "Gemma 4 26B",
-    openRouterId: "google/gemma-4-26b-a4b-it:free",
-    provider: "Google",
+    id: "nemotron-nano-30b",
+    name: "Nemotron 3 Nano 30B",
+    openRouterId: "nvidia/nemotron-3-nano-30b-a3b:free",
+    provider: "NVIDIA",
+  },
+  {
+    id: "lfm-1.2b",
+    name: "LFM 2.5 1.2B",
+    openRouterId: "liquid/lfm-2.5-1.2b-instruct:free",
+    provider: "Liquid",
   },
 ] as const;
 
