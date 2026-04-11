@@ -4,6 +4,8 @@ import { triggerCREWorkflow } from "@/lib/cre-trigger";
 import { runOracleConsensus } from "@/lib/oracle-engine";
 import { MODELS } from "@/lib/types";
 
+export const maxDuration = 60;
+
 const rateLimitMap = new Map<string, number[]>();
 const RATE_LIMIT = 5;
 const RATE_WINDOW_MS = 60 * 60 * 1000;
