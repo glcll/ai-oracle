@@ -16,6 +16,9 @@ function Nav() {
         <Link href="#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
           How it works
         </Link>
+        <Link href="#why-cre" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+          Why CRE
+        </Link>
         <Link href="#api" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
           API
         </Link>
@@ -263,6 +266,102 @@ function ApiReference() {
   );
 }
 
+function WhyCRE() {
+  const centralized = [
+    { label: "Single point of failure", desc: "One server goes down, your AI is offline." },
+    { label: "Trust the operator", desc: "You have no way to verify the response wasn't filtered, edited, or fabricated." },
+    { label: "Opaque model selection", desc: "The provider picks one model behind the scenes. You get what you get." },
+    { label: "No consensus", desc: "One model, one opinion. Hallucinations pass through unchecked." },
+    { label: "Mutable history", desc: "Responses can be retroactively altered. No audit trail." },
+  ];
+
+  const cre = [
+    { label: "Decentralized oracle network", desc: "Runs across independent DON nodes. No single operator can censor or tamper with results." },
+    { label: "Cryptographic attestation", desc: "Every response is signed by the nodes that produced it. Verifiable on-chain." },
+    { label: "Multi-model by design", desc: "3 models respond independently. You see every answer, not just the one someone picked for you." },
+    { label: "BFT consensus on quality", desc: "A 3x3 cross-evaluation matrix scored by median aggregation — outliers and hallucinations get filtered." },
+    { label: "Immutable results", desc: "Consensus output can be anchored on-chain. The record can't be changed after the fact." },
+  ];
+
+  return (
+    <section id="why-cre" className="px-[var(--space-6x)] py-[var(--space-16x)]">
+      <div className="max-w-5xl mx-auto">
+        <h2 className="font-display text-3xl font-bold text-center mb-[var(--space-4x)] text-foreground">
+          Why Chainlink CRE?
+        </h2>
+        <p className="text-center text-base mb-[var(--space-12x)] max-w-2xl mx-auto text-muted-foreground">
+          Running AI inference on a centralized API means trusting a single operator with no verification.
+          CRE replaces trust with cryptographic proof.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--space-6x)]">
+          {/* Centralized column */}
+          <div className="rounded-[var(--border-radius-secondary)] border border-error-border bg-error/30 p-[var(--space-6x)]">
+            <div className="flex items-center gap-[var(--space-3x)] mb-[var(--space-6x)]">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-error border border-error-border">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-error-foreground">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </div>
+              <h3 className="font-display text-lg font-bold text-foreground">Centralized AI API</h3>
+            </div>
+            <ul className="space-y-[var(--space-5x)]">
+              {centralized.map((item) => (
+                <li key={item.label}>
+                  <p className="text-sm font-medium text-foreground">{item.label}</p>
+                  <p className="text-sm text-muted-foreground mt-[var(--space-1x)]">{item.desc}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* CRE column */}
+          <div className="rounded-[var(--border-radius-secondary)] border border-success-border bg-success/30 p-[var(--space-6x)]">
+            <div className="flex items-center gap-[var(--space-3x)] mb-[var(--space-6x)]">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-success border border-success-border">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-success-foreground">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <h3 className="font-display text-lg font-bold text-foreground">Chainlink CRE</h3>
+            </div>
+            <ul className="space-y-[var(--space-5x)]">
+              {cre.map((item) => (
+                <li key={item.label}>
+                  <p className="text-sm font-medium text-foreground">{item.label}</p>
+                  <p className="text-sm text-muted-foreground mt-[var(--space-1x)]">{item.desc}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-[var(--space-10x)] rounded-[var(--border-radius-secondary)] border border-card-border bg-card p-[var(--space-6x)]">
+          <div className="flex items-start gap-[var(--space-4x)]">
+            <div className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center bg-progress border border-progress-border">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-progress-foreground">
+                <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+            </div>
+            <div>
+              <h4 className="font-display text-base font-bold text-foreground mb-[var(--space-1x)]">
+                What is the Chainlink Runtime Environment?
+              </h4>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                CRE is an execution framework where independent node operators run your workflow logic
+                inside a decentralized oracle network (DON). Each node fetches data, runs computation,
+                and participates in Byzantine Fault Tolerant consensus — meaning even if some nodes
+                misbehave, the network still produces a correct, agreed-upon result. For AI inference,
+                this means no single model or operator decides the answer.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Models() {
   const models = [
     { name: "Nemotron Nano 9B", provider: "NVIDIA", role: "Fast inference" },
@@ -321,6 +420,7 @@ export default function Home() {
       <main className="flex-1">
         <Hero />
         <HowItWorks />
+        <WhyCRE />
         <Models />
         <ApiReference />
       </main>
