@@ -2,12 +2,14 @@ import { MODELS, type OracleResult, type ModelResponse, type ScoreMatrix } from 
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
+type SendFn = (data: Record<string, unknown>) => void;
+
 async function callModel(
   modelId: string,
   systemPrompt: string,
   userPrompt: string,
   apiKey: string,
-  maxTokens = 512
+  maxTokens = 256
 ): Promise<string> {
   const res = await fetch(OPENROUTER_URL, {
     method: "POST",
@@ -28,9 +30,9 @@ async function callModel(
   });
 
   if (res.status === 429) {
-    const wait = Math.min(parseInt(res.headers.get("retry-after") || "5", 10), 15) * 1000;
+    const wait = Math.min(parseInt(res.headers.get("retry-after") || "5", 10), 10) * 1000;
     await new Promise((r) => setTimeout(r, wait));
-    return callModel(modelId, systemPrompt, userPrompt, apiKey);
+    return callModel(modelId, systemPrompt, userPrompt, apiKey, maxTokens);
   }
 
   if (!res.ok) {
@@ -52,28 +54,30 @@ function parseJsonResponse(raw: string): Record<string, unknown> | null {
   }
 }
 
-export async function runOracleConsensus(
+export async function runOracleConsensusStreaming(
   requestId: string,
-  prompt: string
+  prompt: string,
+  send: SendFn
 ): Promise<OracleResult> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    return {
-      requestId,
-      status: "failed",
-      error: "OPENROUTER_API_KEY not configured",
-    };
+    return { requestId, status: "failed", error: "OPENROUTER_API_KEY not configured" };
   }
 
   const submittedAt = new Date().toISOString();
+
   try {
-    // Phase 1: Query all 3 models
+    // Phase 1: Query all 3 models in parallel
+    send({ type: "phase", phase: "generation", message: "Querying 3 AI models..." });
+
     const generationPrompt = `Answer concisely. Respond ONLY with JSON: { "answer": "your answer", "confidence": <1-10> }`;
 
     const rawResponses = await Promise.all(
-      MODELS.map((m) =>
-        callModel(m.openRouterId, generationPrompt, prompt, apiKey, 256)
-      )
+      MODELS.map(async (m, i) => {
+        const result = await callModel(m.openRouterId, generationPrompt, prompt, apiKey, 256);
+        send({ type: "model_done", phase: "generation", model: m.id, index: i });
+        return result;
+      })
     );
 
     const responses = rawResponses.map((raw, i) => {
@@ -81,39 +85,39 @@ export async function runOracleConsensus(
       return {
         model: MODELS[i].id,
         modelName: MODELS[i].name,
-        answer: (parsed?.answer as string) ?? raw,
+        answer: (parsed?.answer as string) ?? raw.slice(0, 500),
         confidence: (parsed?.confidence as number) ?? 5,
       };
     });
 
     // Phase 2: Each model judges all 3 responses (3x3 matrix)
-    const judgePrompt = (r1: string, r2: string, r3: string) =>
-      `You are evaluating 3 AI responses to the question: "${prompt}"
-
-[Response 1]: ${r1}
-
-[Response 2]: ${r2}
-
-[Response 3]: ${r3}
-
-Score each response on accuracy, completeness, and clarity (1-10 integer scale). Respond with ONLY valid JSON: { "score_1": <int>, "score_2": <int>, "score_3": <int> }`;
+    send({ type: "phase", phase: "judging", message: "3 judges evaluating responses..." });
 
     const answers = responses.map((r) => r.answer);
+    const judgePromptText = `Score these 3 AI responses to "${prompt}" on accuracy and clarity (1-10). Return ONLY JSON: { "score_1": <int>, "score_2": <int>, "score_3": <int> }
+
+[1]: ${answers[0]}
+[2]: ${answers[1]}
+[3]: ${answers[2]}`;
+
     const judgeResults = await Promise.all(
-      MODELS.map((m) =>
-        callModel(
+      MODELS.map(async (m, i) => {
+        const result = await callModel(
           m.openRouterId,
-          "You are an impartial AI response evaluator. Score responses 1-10. Return only JSON.",
-          judgePrompt(answers[0], answers[1], answers[2]),
+          "Score each response 1-10. Return only JSON.",
+          judgePromptText,
           apiKey,
-          128
-        )
-      )
+          64
+        );
+        send({ type: "model_done", phase: "judging", model: m.id, index: i });
+        return result;
+      })
     );
 
     // Phase 3: Build score matrix and compute winner
+    send({ type: "phase", phase: "consensus", message: "Computing consensus..." });
+
     const scoreMatrix: ScoreMatrix = {};
-    const avgScores: { [model: string]: number } = {};
     const totals = [0, 0, 0];
     let judgeCount = 0;
 
@@ -137,20 +141,20 @@ Score each response on accuracy, completeness, and clarity (1-10 integer scale).
       }
     }
 
+    const avgScores: { [model: string]: number } = {};
     for (let r = 0; r < 3; r++) {
       avgScores[MODELS[r].id] = Math.round((totals[r] / judgeCount) * 100) / 100;
     }
 
     const winningIndex = totals.indexOf(Math.max(...totals));
+    const completedAt = new Date().toISOString();
 
-    const allResponses: ModelResponse[] = responses.map((r, i) => ({
+    const allResponses: ModelResponse[] = responses.map((r) => ({
       model: r.model,
       answer: r.answer,
       confidence: r.confidence,
       avgScore: avgScores[r.model],
     }));
-
-    const completedAt = new Date().toISOString();
 
     return {
       requestId,

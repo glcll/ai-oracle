@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import type { OracleResult } from "@/lib/types";
 
@@ -8,10 +8,10 @@ type Phase = "idle" | "submitting" | "querying" | "evaluating" | "consensus" | "
 
 const PHASE_LABELS: Record<Phase, string> = {
   idle: "",
-  submitting: "Submitting prompt...",
+  submitting: "Connecting to oracle network...",
   querying: "Querying 3 AI models via OpenRouter...",
   evaluating: "Each model judging all 3 responses (3x3 matrix)...",
-  consensus: "DON nodes reaching consensus on scores...",
+  consensus: "Computing consensus scores...",
   done: "Consensus reached!",
   error: "Something went wrong",
 };
@@ -22,55 +22,6 @@ export default function Playground() {
   const [result, setResult] = useState<OracleResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expandedModel, setExpandedModel] = useState<number | null>(null);
-
-  const pollForResult = useCallback(async (requestId: string) => {
-    const phaseTimings: { phase: Phase; delay: number }[] = [
-      { phase: "querying", delay: 2000 },
-      { phase: "evaluating", delay: 4000 },
-      { phase: "consensus", delay: 2000 },
-    ];
-
-    let phaseIndex = 0;
-
-    const advancePhase = () => {
-      if (phaseIndex < phaseTimings.length) {
-        setPhase(phaseTimings[phaseIndex].phase);
-        phaseIndex++;
-      }
-    };
-
-    advancePhase();
-
-    const phaseTimer = setInterval(advancePhase, 3000);
-
-    const maxAttempts = 60;
-    for (let i = 0; i < maxAttempts; i++) {
-      await new Promise((r) => setTimeout(r, 2000));
-      try {
-        const res = await fetch(`/api/v1/result/${requestId}`);
-        const data: OracleResult = await res.json();
-
-        if (data.status === "completed") {
-          clearInterval(phaseTimer);
-          setPhase("done");
-          setResult(data);
-          return;
-        }
-        if (data.status === "failed") {
-          clearInterval(phaseTimer);
-          setPhase("error");
-          setError(data.error ?? "Oracle evaluation failed");
-          return;
-        }
-      } catch {
-        // continue polling
-      }
-    }
-
-    clearInterval(phaseTimer);
-    setPhase("error");
-    setError("Timed out waiting for result");
-  }, []);
 
   const handleSubmit = async () => {
     if (!prompt.trim()) return;
@@ -87,15 +38,46 @@ export default function Playground() {
         body: JSON.stringify({ prompt: prompt.trim() }),
       });
 
-      if (!res.ok) {
-        const data = await res.json();
+      if (!res.ok || !res.body) {
+        const text = await res.text();
         setPhase("error");
-        setError(data.error ?? `HTTP ${res.status}`);
+        setError(text || `HTTP ${res.status}`);
         return;
       }
 
-      const data = await res.json();
-      pollForResult(data.requestId);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+
+            if (event.type === "phase") {
+              if (event.phase === "generation") setPhase("querying");
+              else if (event.phase === "judging") setPhase("evaluating");
+              else if (event.phase === "consensus") setPhase("consensus");
+            } else if (event.type === "complete") {
+              setPhase("done");
+              setResult(event.result);
+            } else if (event.type === "error") {
+              setPhase("error");
+              setError(event.error);
+            }
+          } catch {
+            // skip malformed events
+          }
+        }
+      }
     } catch (err) {
       setPhase("error");
       setError(err instanceof Error ? err.message : "Network error");
