@@ -2,46 +2,26 @@ import Link from "next/link";
 
 function Nav() {
   return (
-    <nav
-      className="flex items-center justify-between px-[var(--space-6x)] py-[var(--space-4x)] border-b"
-      style={{ borderColor: "var(--border)" }}
-    >
+    <nav className="flex items-center justify-between px-[var(--space-6x)] py-[var(--space-4x)] border-b border-border">
       <div className="flex items-center gap-[var(--space-3x)]">
-        <div
-          className="w-8 h-8 rounded-full flex items-center justify-center"
-          style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
-        >
+        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary text-primary-foreground">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <circle cx="12" cy="12" r="10" />
             <path d="M12 6v6l4 2" />
           </svg>
         </div>
-        <span className="font-display text-lg font-bold" style={{ color: "var(--foreground)" }}>
-          AI Oracle
-        </span>
+        <span className="font-display text-lg font-bold text-foreground">AI Oracle</span>
       </div>
       <div className="flex items-center gap-[var(--space-6x)]">
-        <Link
-          href="#how-it-works"
-          className="text-sm font-medium transition-colors"
-          style={{ color: "var(--muted-foreground)" }}
-        >
+        <Link href="#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
           How it works
         </Link>
-        <Link
-          href="#api"
-          className="text-sm font-medium transition-colors"
-          style={{ color: "var(--muted-foreground)" }}
-        >
+        <Link href="#api" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
           API
         </Link>
         <Link
           href="/playground"
-          className="inline-flex items-center justify-center rounded-[var(--border-radius-primary)] px-[var(--space-4x)] py-[var(--space-2x)] text-sm font-medium transition-colors"
-          style={{
-            background: "var(--primary)",
-            color: "var(--primary-foreground)",
-          }}
+          className="inline-flex items-center justify-center rounded-[var(--border-radius-primary)] px-[var(--space-4x)] py-[var(--space-2x)] text-sm font-medium bg-primary text-primary-foreground hover:bg-primary-hover transition-colors"
         >
           Try it
         </Link>
@@ -53,31 +33,18 @@ function Nav() {
 function Hero() {
   return (
     <section className="flex flex-col items-center text-center px-[var(--space-6x)] pt-[var(--space-20x)] pb-[var(--space-16x)]">
-      <div
-        className="inline-flex items-center gap-[var(--space-2x)] rounded-[1.5rem] border px-[var(--space-3x)] py-[var(--space-1x)] text-xs font-medium mb-[var(--space-6x)]"
-        style={{
-          background: "var(--progress)",
-          borderColor: "var(--progress-border)",
-          color: "var(--progress-foreground)",
-        }}
-      >
-        <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: "var(--progress-foreground)" }} />
+      <div className="inline-flex items-center gap-[var(--space-2x)] rounded-[1.5rem] border border-progress-border bg-progress text-progress-foreground px-[var(--space-3x)] py-[var(--space-1x)] text-xs font-medium mb-[var(--space-6x)]">
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-progress-foreground" />
         Powered by Chainlink CRE
       </div>
 
-      <h1
-        className="font-display text-5xl md:text-6xl font-bold max-w-3xl leading-tight"
-        style={{ color: "var(--foreground)" }}
-      >
+      <h1 className="font-display text-5xl md:text-6xl font-bold max-w-3xl leading-tight text-foreground">
         Decentralized AI inference
         <br />
-        <span style={{ color: "var(--primary)" }}>with oracle consensus</span>
+        <span className="text-primary">with oracle consensus</span>
       </h1>
 
-      <p
-        className="mt-[var(--space-6x)] text-lg max-w-2xl leading-relaxed"
-        style={{ color: "var(--muted-foreground)" }}
-      >
+      <p className="mt-[var(--space-6x)] text-lg max-w-2xl leading-relaxed text-muted-foreground">
         Send a prompt to the Chainlink oracle network. 3 AI models respond, 3 judges
         cross-evaluate, and DON nodes reach consensus on the best answer. One API call.
       </p>
@@ -85,43 +52,24 @@ function Hero() {
       <div className="flex gap-[var(--space-4x)] mt-[var(--space-10x)]">
         <Link
           href="/playground"
-          className="inline-flex items-center justify-center rounded-[var(--border-radius-primary)] px-[var(--space-6x)] py-[var(--space-3x)] text-base font-medium transition-colors"
-          style={{
-            background: "var(--primary)",
-            color: "var(--primary-foreground)",
-          }}
+          className="inline-flex items-center justify-center rounded-[var(--border-radius-primary)] px-[var(--space-6x)] py-[var(--space-3x)] text-base font-medium bg-primary text-primary-foreground hover:bg-primary-hover transition-colors"
         >
           Try it now
         </Link>
         <Link
           href="#api"
-          className="inline-flex items-center justify-center rounded-[var(--border-radius-primary)] border px-[var(--space-6x)] py-[var(--space-3x)] text-base font-medium transition-colors"
-          style={{
-            borderColor: "var(--border)",
-            color: "var(--foreground)",
-          }}
+          className="inline-flex items-center justify-center rounded-[var(--border-radius-primary)] border border-border px-[var(--space-6x)] py-[var(--space-3x)] text-base font-medium text-foreground hover:bg-muted transition-colors"
         >
           API Reference
         </Link>
       </div>
 
-      <div
-        className="mt-[var(--space-12x)] w-full max-w-2xl rounded-[var(--border-radius-secondary)] border text-left overflow-hidden"
-        style={{
-          background: "var(--card)",
-          borderColor: "var(--card-border)",
-        }}
-      >
-        <div
-          className="flex items-center gap-[var(--space-2x)] px-[var(--space-4x)] py-[var(--space-3x)] border-b"
-          style={{ borderColor: "var(--border)", background: "var(--muted)" }}
-        >
-          <span className="font-mono text-xs" style={{ color: "var(--muted-foreground)" }}>
-            ask-oracle.sh
-          </span>
+      <div className="mt-[var(--space-12x)] w-full max-w-2xl rounded-[var(--border-radius-secondary)] border border-card-border bg-card text-left overflow-hidden">
+        <div className="flex items-center gap-[var(--space-2x)] px-[var(--space-4x)] py-[var(--space-3x)] border-b border-border bg-muted">
+          <span className="font-mono text-xs text-muted-foreground">ask-oracle.sh</span>
         </div>
         <pre className="p-[var(--space-4x)] overflow-x-auto">
-          <code className="font-mono text-sm" style={{ color: "var(--foreground)" }}>
+          <code className="font-mono text-sm text-foreground">
 {`curl -X POST https://ai-oracle.vercel.app/api/v1/ask \\
   -H "Content-Type: application/json" \\
   -d '{"prompt": "What causes auroras?"}'
@@ -145,35 +93,35 @@ function HowItWorks() {
       step: "1",
       title: "Ask",
       description: "POST a prompt to the API. Your question is sent to the Chainlink oracle network.",
-      color: "var(--progress)",
-      borderColor: "var(--progress-border)",
-      fgColor: "var(--progress-foreground)",
+      bg: "bg-progress",
+      border: "border-progress-border",
+      fg: "text-progress-foreground",
     },
     {
       step: "2",
       title: "Evaluate",
       description: "3 AI models respond independently. Each model then judges all 3 responses on a 1-10 scale, producing a 3x3 scoring matrix.",
-      color: "var(--warning)",
-      borderColor: "var(--warning-border)",
-      fgColor: "var(--warning-foreground)",
+      bg: "bg-warning",
+      border: "border-warning-border",
+      fg: "text-warning-foreground",
     },
     {
       step: "3",
       title: "Consensus",
       description: "DON nodes reach BFT consensus on the scores via median aggregation. The response with the highest average score wins.",
-      color: "var(--success)",
-      borderColor: "var(--success-border)",
-      fgColor: "var(--success-foreground)",
+      bg: "bg-success",
+      border: "border-success-border",
+      fg: "text-success-foreground",
     },
   ];
 
   return (
-    <section id="how-it-works" className="px-[var(--space-6x)] py-[var(--space-16x)]" style={{ background: "var(--background-alt)" }}>
+    <section id="how-it-works" className="px-[var(--space-6x)] py-[var(--space-16x)] bg-background-alt">
       <div className="max-w-4xl mx-auto">
-        <h2 className="font-display text-3xl font-bold text-center mb-[var(--space-4x)]" style={{ color: "var(--foreground)" }}>
+        <h2 className="font-display text-3xl font-bold text-center mb-[var(--space-4x)] text-foreground">
           How it works
         </h2>
-        <p className="text-center text-base mb-[var(--space-12x)]" style={{ color: "var(--muted-foreground)" }}>
+        <p className="text-center text-base mb-[var(--space-12x)] text-muted-foreground">
           Three steps. One API call. Cryptographic proof of consensus.
         </p>
 
@@ -181,54 +129,47 @@ function HowItWorks() {
           {steps.map((s) => (
             <div
               key={s.step}
-              className="rounded-[var(--border-radius-secondary)] border p-[var(--space-6x)]"
-              style={{ background: "var(--card)", borderColor: "var(--card-border)" }}
+              className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card p-[var(--space-6x)]"
             >
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold mb-[var(--space-4x)]"
-                style={{ background: s.color, color: s.fgColor, border: `1px solid ${s.borderColor}` }}
-              >
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold mb-[var(--space-4x)] ${s.bg} ${s.fg} border ${s.border}`}>
                 {s.step}
               </div>
-              <h3 className="font-display text-xl font-bold mb-[var(--space-2x)]" style={{ color: "var(--foreground)" }}>
+              <h3 className="font-display text-xl font-bold mb-[var(--space-2x)] text-foreground">
                 {s.title}
               </h3>
-              <p className="text-sm leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+              <p className="text-sm leading-relaxed text-muted-foreground">
                 {s.description}
               </p>
             </div>
           ))}
         </div>
 
-        <div
-          className="mt-[var(--space-10x)] rounded-[var(--border-radius-secondary)] border p-[var(--space-6x)]"
-          style={{ background: "var(--card)", borderColor: "var(--card-border)" }}
-        >
-          <h3 className="font-display text-lg font-bold mb-[var(--space-4x)]" style={{ color: "var(--foreground)" }}>
+        <div className="mt-[var(--space-10x)] rounded-[var(--border-radius-secondary)] border border-card-border bg-card p-[var(--space-6x)]">
+          <h3 className="font-display text-lg font-bold mb-[var(--space-4x)] text-foreground">
             3x3 Scoring Matrix
           </h3>
-          <p className="text-sm mb-[var(--space-4x)]" style={{ color: "var(--muted-foreground)" }}>
+          <p className="text-sm mb-[var(--space-4x)] text-muted-foreground">
             Each model generates a response, then acts as an impartial judge of all three responses.
             The highest average score wins.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm font-mono">
               <thead>
-                <tr style={{ color: "var(--muted-foreground)" }}>
+                <tr className="text-muted-foreground">
                   <th className="text-left py-[var(--space-2x)] pr-[var(--space-4x)]"></th>
-                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">Llama 3.3</th>
-                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">DeepSeek R1</th>
-                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">Qwen3 80B</th>
+                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">Model A</th>
+                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">Model B</th>
+                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">Model C</th>
                 </tr>
               </thead>
-              <tbody style={{ color: "var(--foreground)" }}>
+              <tbody className="text-foreground">
                 {[
-                  { judge: "Judge: Llama", scores: [7, 8, 6] },
-                  { judge: "Judge: DeepSeek", scores: [8, 9, 7] },
-                  { judge: "Judge: Qwen3", scores: [7, 8, 5] },
+                  { judge: "Judge: A", scores: [7, 8, 6] },
+                  { judge: "Judge: B", scores: [8, 9, 7] },
+                  { judge: "Judge: C", scores: [7, 8, 5] },
                 ].map((row) => (
-                  <tr key={row.judge} className="border-t" style={{ borderColor: "var(--border-muted)" }}>
-                    <td className="py-[var(--space-2x)] pr-[var(--space-4x)] text-left" style={{ color: "var(--muted-foreground)" }}>
+                  <tr key={row.judge} className="border-t border-border-muted">
+                    <td className="py-[var(--space-2x)] pr-[var(--space-4x)] text-left text-muted-foreground">
                       {row.judge}
                     </td>
                     {row.scores.map((score, i) => (
@@ -238,13 +179,10 @@ function HowItWorks() {
                     ))}
                   </tr>
                 ))}
-                <tr className="border-t font-bold" style={{ borderColor: "var(--border)" }}>
-                  <td className="py-[var(--space-2x)] pr-[var(--space-4x)]" style={{ color: "var(--muted-foreground)" }}>Average</td>
+                <tr className="border-t border-border font-bold">
+                  <td className="py-[var(--space-2x)] pr-[var(--space-4x)] text-muted-foreground">Average</td>
                   <td className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">7.33</td>
-                  <td
-                    className="text-center py-[var(--space-2x)] px-[var(--space-3x)]"
-                    style={{ color: "var(--success-foreground)" }}
-                  >
+                  <td className="text-center py-[var(--space-2x)] px-[var(--space-3x)] text-success-foreground">
                     8.33
                   </td>
                   <td className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">6.00</td>
@@ -262,10 +200,10 @@ function ApiReference() {
   return (
     <section id="api" className="px-[var(--space-6x)] py-[var(--space-16x)]">
       <div className="max-w-4xl mx-auto">
-        <h2 className="font-display text-3xl font-bold text-center mb-[var(--space-4x)]" style={{ color: "var(--foreground)" }}>
+        <h2 className="font-display text-3xl font-bold text-center mb-[var(--space-4x)] text-foreground">
           API Reference
         </h2>
-        <p className="text-center text-base mb-[var(--space-12x)]" style={{ color: "var(--muted-foreground)" }}>
+        <p className="text-center text-base mb-[var(--space-12x)] text-muted-foreground">
           Three endpoints. No SDK required. Works with any language.
         </p>
 
@@ -276,49 +214,45 @@ function ApiReference() {
               path: "/api/v1/ask",
               desc: "Submit a prompt for oracle consensus. Returns a requestId and statusUrl to poll.",
               body: `{ "prompt": "What causes auroras?" }`,
+              tagBg: "bg-success",
+              tagBorder: "border-success-border",
+              tagFg: "text-success-foreground",
             },
             {
               method: "GET",
               path: "/api/v1/result/:id",
               desc: "Poll for the consensus result. Returns the winning response, full 3x3 score matrix, and all model responses.",
               body: null,
+              tagBg: "bg-progress",
+              tagBorder: "border-progress-border",
+              tagFg: "text-progress-foreground",
             },
             {
               method: "GET",
               path: "/api/v1/models",
               desc: "List the AI models in the oracle council and the consensus method used.",
               body: null,
+              tagBg: "bg-progress",
+              tagBorder: "border-progress-border",
+              tagFg: "text-progress-foreground",
             },
           ].map((ep) => (
             <div
               key={ep.path}
-              className="rounded-[var(--border-radius-secondary)] border p-[var(--space-6x)]"
-              style={{ background: "var(--card)", borderColor: "var(--card-border)" }}
+              className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card p-[var(--space-6x)]"
             >
               <div className="flex items-center gap-[var(--space-3x)] mb-[var(--space-3x)]">
                 <span
-                  className="inline-flex items-center rounded-[1.5rem] border px-[var(--space-3x)] py-[var(--space-1x)] text-xs font-bold font-mono"
-                  style={{
-                    background: ep.method === "POST" ? "var(--success)" : "var(--progress)",
-                    borderColor: ep.method === "POST" ? "var(--success-border)" : "var(--progress-border)",
-                    color: ep.method === "POST" ? "var(--success-foreground)" : "var(--progress-foreground)",
-                  }}
+                  className={`inline-flex items-center rounded-[1.5rem] border px-[var(--space-3x)] py-[var(--space-1x)] text-xs font-bold font-mono ${ep.tagBg} ${ep.tagBorder} ${ep.tagFg}`}
                 >
                   {ep.method}
                 </span>
-                <code className="font-mono text-sm font-bold" style={{ color: "var(--foreground)" }}>
-                  {ep.path}
-                </code>
+                <code className="font-mono text-sm font-bold text-foreground">{ep.path}</code>
               </div>
-              <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-                {ep.desc}
-              </p>
+              <p className="text-sm text-muted-foreground">{ep.desc}</p>
               {ep.body && (
-                <pre
-                  className="mt-[var(--space-3x)] rounded-[var(--border-radius-primary)] p-[var(--space-3x)] overflow-x-auto"
-                  style={{ background: "var(--muted)", color: "var(--foreground)" }}
-                >
-                  <code className="font-mono text-xs">{ep.body}</code>
+                <pre className="mt-[var(--space-3x)] rounded-[var(--border-radius-primary)] bg-muted p-[var(--space-3x)] overflow-x-auto">
+                  <code className="font-mono text-xs text-foreground">{ep.body}</code>
                 </pre>
               )}
             </div>
@@ -331,18 +265,18 @@ function ApiReference() {
 
 function Models() {
   const models = [
-    { name: "Llama 3.3 70B", provider: "Meta", role: "General purpose" },
-    { name: "DeepSeek R1", provider: "DeepSeek", role: "Reasoning" },
-    { name: "Qwen3 80B", provider: "Alibaba", role: "Broad capabilities" },
+    { name: "Nemotron Nano 9B", provider: "NVIDIA", role: "Fast inference" },
+    { name: "Nemotron 3 Nano 30B", provider: "NVIDIA", role: "Reasoning" },
+    { name: "LFM 2.5 1.2B", provider: "Liquid", role: "Lightweight" },
   ];
 
   return (
-    <section className="px-[var(--space-6x)] py-[var(--space-16x)]" style={{ background: "var(--background-alt)" }}>
+    <section className="px-[var(--space-6x)] py-[var(--space-16x)] bg-background-alt">
       <div className="max-w-4xl mx-auto">
-        <h2 className="font-display text-3xl font-bold text-center mb-[var(--space-4x)]" style={{ color: "var(--foreground)" }}>
+        <h2 className="font-display text-3xl font-bold text-center mb-[var(--space-4x)] text-foreground">
           The Oracle Council
         </h2>
-        <p className="text-center text-base mb-[var(--space-12x)]" style={{ color: "var(--muted-foreground)" }}>
+        <p className="text-center text-base mb-[var(--space-12x)] text-muted-foreground">
           Three models. Each generates a response AND judges all responses. No single model decides.
         </p>
 
@@ -350,29 +284,16 @@ function Models() {
           {models.map((m) => (
             <div
               key={m.name}
-              className="rounded-[var(--border-radius-secondary)] border p-[var(--space-6x)] text-center"
-              style={{ background: "var(--card)", borderColor: "var(--card-border)" }}
+              className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card p-[var(--space-6x)] text-center"
             >
-              <div
-                className="w-12 h-12 mx-auto rounded-full flex items-center justify-center text-lg font-bold mb-[var(--space-4x)]"
-                style={{ background: "var(--muted)", color: "var(--foreground)" }}
-              >
+              <div className="w-12 h-12 mx-auto rounded-full flex items-center justify-center text-lg font-bold mb-[var(--space-4x)] bg-muted text-foreground">
                 {m.name[0]}
               </div>
-              <h3 className="font-display text-base font-bold mb-[var(--space-1x)]" style={{ color: "var(--foreground)" }}>
+              <h3 className="font-display text-base font-bold mb-[var(--space-1x)] text-foreground">
                 {m.name}
               </h3>
-              <p className="text-xs mb-[var(--space-2x)]" style={{ color: "var(--muted-foreground)" }}>
-                {m.provider}
-              </p>
-              <span
-                className="inline-flex items-center rounded-[1.5rem] border px-[var(--space-3x)] py-[var(--space-1x)] text-xs font-medium"
-                style={{
-                  background: "var(--muted)",
-                  borderColor: "var(--border)",
-                  color: "var(--foreground)",
-                }}
-              >
+              <p className="text-xs mb-[var(--space-2x)] text-muted-foreground">{m.provider}</p>
+              <span className="inline-flex items-center rounded-[1.5rem] border border-border bg-muted px-[var(--space-3x)] py-[var(--space-1x)] text-xs font-medium text-foreground">
                 {m.role}
               </span>
             </div>
@@ -385,11 +306,8 @@ function Models() {
 
 function Footer() {
   return (
-    <footer
-      className="px-[var(--space-6x)] py-[var(--space-8x)] border-t text-center"
-      style={{ borderColor: "var(--border)" }}
-    >
-      <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+    <footer className="px-[var(--space-6x)] py-[var(--space-8x)] border-t border-border text-center">
+      <p className="text-xs text-muted-foreground">
         Built on Chainlink CRE. Not affiliated with or endorsed by Chainlink Labs. Free proof of concept &mdash; use at your own risk.
       </p>
     </footer>

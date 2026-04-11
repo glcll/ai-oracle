@@ -84,37 +84,31 @@ export default function Playground() {
     }
   };
 
+  const isProcessing = phase !== "idle" && phase !== "done" && phase !== "error";
+
   return (
-    <div className="min-h-full flex flex-col">
-      <nav
-        className="flex items-center justify-between px-[var(--space-6x)] py-[var(--space-4x)] border-b"
-        style={{ borderColor: "var(--border)" }}
-      >
+    <div className="min-h-full flex flex-col bg-background">
+      {/* Nav */}
+      <nav className="flex items-center justify-between px-[var(--space-6x)] py-[var(--space-4x)] border-b border-border">
         <Link href="/" className="flex items-center gap-[var(--space-3x)]">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
-          >
+          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary text-primary-foreground">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <circle cx="12" cy="12" r="10" />
               <path d="M12 6v6l4 2" />
             </svg>
           </div>
-          <span className="font-display text-lg font-bold" style={{ color: "var(--foreground)" }}>
-            AI Oracle
-          </span>
+          <span className="font-display text-lg font-bold text-foreground">AI Oracle</span>
         </Link>
-        <span className="text-sm font-medium" style={{ color: "var(--muted-foreground)" }}>
-          Playground
-        </span>
+        <span className="text-sm font-medium text-muted-foreground">Playground</span>
       </nav>
 
+      {/* Main */}
       <main className="flex-1 flex flex-col items-center px-[var(--space-6x)] py-[var(--space-10x)]">
         <div className="w-full max-w-2xl">
-          <h1 className="font-display text-3xl font-bold mb-[var(--space-2x)]" style={{ color: "var(--foreground)" }}>
+          <h1 className="font-display text-3xl font-bold mb-[var(--space-2x)] text-foreground">
             Ask the Oracle Council
           </h1>
-          <p className="text-sm mb-[var(--space-8x)]" style={{ color: "var(--muted-foreground)" }}>
+          <p className="text-sm mb-[var(--space-8x)] text-muted-foreground">
             Your prompt will be answered by 3 AI models, cross-evaluated by 3 judges, and scored via decentralized consensus.
           </p>
 
@@ -126,15 +120,8 @@ export default function Playground() {
               placeholder="What causes auroras?"
               rows={3}
               maxLength={2000}
-              disabled={phase !== "idle" && phase !== "done" && phase !== "error"}
-              className="w-full rounded-[var(--border-radius-secondary)] border p-[var(--space-4x)] text-base font-sans resize-none outline-none transition-colors"
-              style={{
-                background: "var(--input)",
-                borderColor: "var(--input-border)",
-                color: "var(--input-foreground)",
-              }}
-              onFocus={(e) => (e.target.style.borderColor = "var(--input-border-active)")}
-              onBlur={(e) => (e.target.style.borderColor = "var(--input-border)")}
+              disabled={isProcessing}
+              className="w-full rounded-[var(--border-radius-secondary)] border border-input-border bg-input text-input-foreground p-[var(--space-4x)] text-base font-sans resize-none outline-none transition-colors focus:border-input-border-active"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -143,19 +130,13 @@ export default function Playground() {
               }}
             />
             <div className="flex items-center justify-between mt-[var(--space-2x)]">
-              <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                {prompt.length}/2000
-              </span>
+              <span className="text-xs text-muted-foreground">{prompt.length}/2000</span>
               <button
                 onClick={handleSubmit}
-                disabled={!prompt.trim() || (phase !== "idle" && phase !== "done" && phase !== "error")}
-                className="rounded-[var(--border-radius-primary)] px-[var(--space-6x)] py-[var(--space-2x)] text-sm font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  background: "var(--primary)",
-                  color: "var(--primary-foreground)",
-                }}
+                disabled={!prompt.trim() || isProcessing}
+                className="rounded-[var(--border-radius-primary)] px-[var(--space-6x)] py-[var(--space-2x)] text-sm font-medium bg-primary text-primary-foreground hover:bg-primary-hover transition-colors cursor-pointer disabled:bg-primary-disabled disabled:cursor-not-allowed"
               >
-                {phase === "idle" || phase === "done" || phase === "error" ? "Ask Oracle" : "Processing..."}
+                {isProcessing ? "Processing..." : "Ask Oracle"}
               </button>
             </div>
           </div>
@@ -165,14 +146,7 @@ export default function Playground() {
 
           {/* Error */}
           {phase === "error" && error && (
-            <div
-              className="rounded-[var(--border-radius-secondary)] border p-[var(--space-4x)] mb-[var(--space-6x)]"
-              style={{
-                background: "var(--error)",
-                borderColor: "var(--error-border)",
-                color: "var(--error-foreground)",
-              }}
-            >
+            <div className="rounded-[var(--border-radius-secondary)] border border-error-border bg-error text-error-foreground p-[var(--space-4x)] mb-[var(--space-6x)]">
               <p className="text-sm font-medium">{error}</p>
             </div>
           )}
@@ -181,78 +155,73 @@ export default function Playground() {
           {result && result.status === "completed" && (
             <div className="space-y-[var(--space-6x)]">
               {/* Winning response */}
-              <div
-                className="rounded-[var(--border-radius-secondary)] border p-[var(--space-6x)]"
-                style={{ background: "var(--card)", borderColor: "var(--card-border)" }}
-              >
+              <div className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card p-[var(--space-6x)]">
                 <div className="flex items-center gap-[var(--space-3x)] mb-[var(--space-4x)]">
-                  <span
-                    className="inline-flex items-center rounded-[1.5rem] border px-[var(--space-3x)] py-[var(--space-1x)] text-xs font-bold"
-                    style={{
-                      background: "var(--success)",
-                      borderColor: "var(--success-border)",
-                      color: "var(--success-foreground)",
-                    }}
-                  >
+                  <span className="inline-flex items-center rounded-[1.5rem] border border-success-border bg-success text-success-foreground px-[var(--space-3x)] py-[var(--space-1x)] text-xs font-bold">
                     Winner
                   </span>
-                  <span className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
+                  <span className="text-sm font-medium text-foreground">
                     {result.consensus?.winningModel}
                   </span>
                 </div>
-                <p className="text-base leading-relaxed whitespace-pre-wrap" style={{ color: "var(--foreground)" }}>
+                <p className="text-base leading-relaxed whitespace-pre-wrap text-foreground">
                   {result.response}
                 </p>
+                {result.timing?.durationMs && (
+                  <p className="mt-[var(--space-3x)] text-xs text-muted-foreground">
+                    Completed in {(result.timing.durationMs / 1000).toFixed(1)}s
+                  </p>
+                )}
               </div>
 
               {/* Score matrix */}
               {result.consensus?.scoreMatrix && (
-                <div
-                  className="rounded-[var(--border-radius-secondary)] border p-[var(--space-6x)]"
-                  style={{ background: "var(--card)", borderColor: "var(--card-border)" }}
-                >
-                  <h3 className="font-display text-base font-bold mb-[var(--space-4x)]" style={{ color: "var(--foreground)" }}>
+                <div className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card p-[var(--space-6x)]">
+                  <h3 className="font-display text-base font-bold mb-[var(--space-4x)] text-foreground">
                     3x3 Scoring Matrix
                   </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm font-mono">
                       <thead>
-                        <tr style={{ color: "var(--muted-foreground)" }}>
+                        <tr className="text-muted-foreground">
                           <th className="text-left py-[var(--space-2x)] pr-[var(--space-4x)]"></th>
                           {result.allResponses?.map((r) => (
                             <th key={r.model} className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">
-                              {r.model.split("-")[0]}
+                              {r.model}
                             </th>
                           ))}
                         </tr>
                       </thead>
-                      <tbody style={{ color: "var(--foreground)" }}>
+                      <tbody className="text-foreground">
                         {result.allResponses?.map((judge) => (
-                          <tr key={`judge-${judge.model}`} className="border-t" style={{ borderColor: "var(--border-muted)" }}>
-                            <td className="py-[var(--space-2x)] pr-[var(--space-4x)] whitespace-nowrap" style={{ color: "var(--muted-foreground)" }}>
-                              Judge: {judge.model.split("-")[0]}
+                          <tr key={`judge-${judge.model}`} className="border-t border-border-muted">
+                            <td className="py-[var(--space-2x)] pr-[var(--space-4x)] whitespace-nowrap text-muted-foreground">
+                              Judge: {judge.model}
                             </td>
                             {result.allResponses?.map((respondent) => {
                               const score = result.consensus?.scoreMatrix?.[respondent.model]?.judgedBy?.[judge.model];
+                              const isWinner = respondent.model === result.consensus?.winningModel;
                               return (
-                                <td key={respondent.model} className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">
+                                <td
+                                  key={respondent.model}
+                                  className={`text-center py-[var(--space-2x)] px-[var(--space-3x)] ${isWinner ? "text-success-foreground font-medium" : ""}`}
+                                >
                                   {score ?? "-"}
                                 </td>
                               );
                             })}
                           </tr>
                         ))}
-                        <tr className="border-t font-bold" style={{ borderColor: "var(--border)" }}>
-                          <td className="py-[var(--space-2x)] pr-[var(--space-4x)]" style={{ color: "var(--muted-foreground)" }}>
+                        <tr className="border-t border-border font-bold">
+                          <td className="py-[var(--space-2x)] pr-[var(--space-4x)] text-muted-foreground">
                             Average
                           </td>
                           {result.allResponses?.map((r) => (
                             <td
                               key={r.model}
-                              className="text-center py-[var(--space-2x)] px-[var(--space-3x)]"
-                              style={{
-                                color: r.model === result.consensus?.winningModel ? "var(--success-foreground)" : undefined,
-                              }}
+                              className={`text-center py-[var(--space-2x)] px-[var(--space-3x)] ${
+                                r.model === result.consensus?.winningModel ? "text-success-foreground" : ""
+                              }`}
                             >
                               {r.avgScore}
                             </td>
@@ -262,14 +231,7 @@ export default function Playground() {
                     </table>
                   </div>
                   <div className="flex items-center gap-[var(--space-2x)] mt-[var(--space-4x)]">
-                    <span
-                      className="inline-flex items-center rounded-[1.5rem] border px-[var(--space-3x)] py-[var(--space-1x)] text-xs font-medium"
-                      style={{
-                        background: "var(--muted)",
-                        borderColor: "var(--border)",
-                        color: "var(--muted-foreground)",
-                      }}
-                    >
+                    <span className="inline-flex items-center rounded-[1.5rem] border border-border bg-muted text-muted-foreground px-[var(--space-3x)] py-[var(--space-1x)] text-xs font-medium">
                       {result.consensus?.consensusMethod}
                     </span>
                   </div>
@@ -277,44 +239,28 @@ export default function Playground() {
               )}
 
               {/* All responses */}
-              <div
-                className="rounded-[var(--border-radius-secondary)] border"
-                style={{ background: "var(--card)", borderColor: "var(--card-border)" }}
-              >
-                <div className="p-[var(--space-6x)] pb-0">
-                  <h3 className="font-display text-base font-bold mb-[var(--space-4x)]" style={{ color: "var(--foreground)" }}>
+              <div className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card overflow-hidden">
+                <div className="p-[var(--space-6x)] pb-[var(--space-3x)]">
+                  <h3 className="font-display text-base font-bold text-foreground">
                     All Model Responses
                   </h3>
                 </div>
                 {result.allResponses?.map((r, i) => (
-                  <div
-                    key={r.model}
-                    className="border-t"
-                    style={{ borderColor: "var(--border-muted)" }}
-                  >
+                  <div key={r.model} className="border-t border-border-muted">
                     <button
                       onClick={() => setExpandedModel(expandedModel === i ? null : i)}
-                      className="w-full flex items-center justify-between p-[var(--space-4x)] px-[var(--space-6x)] cursor-pointer text-left"
+                      className="w-full flex items-center justify-between p-[var(--space-4x)] px-[var(--space-6x)] cursor-pointer text-left hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex items-center gap-[var(--space-3x)]">
-                        <span className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
-                          {r.model}
-                        </span>
+                        <span className="text-sm font-medium text-foreground">{r.model}</span>
                         {r.model === result.consensus?.winningModel && (
-                          <span
-                            className="inline-flex items-center rounded-[1.5rem] border px-[var(--space-2x)] py-0.5 text-xxs font-bold"
-                            style={{
-                              background: "var(--success)",
-                              borderColor: "var(--success-border)",
-                              color: "var(--success-foreground)",
-                            }}
-                          >
+                          <span className="inline-flex items-center rounded-[1.5rem] border border-success-border bg-success text-success-foreground px-[var(--space-2x)] py-0.5 text-xxs font-bold">
                             Winner
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-[var(--space-3x)]">
-                        <span className="text-sm font-mono" style={{ color: "var(--muted-foreground)" }}>
+                        <span className="text-sm font-mono text-muted-foreground">
                           avg: {r.avgScore}
                         </span>
                         <svg
@@ -324,11 +270,7 @@ export default function Playground() {
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="2"
-                          className="transition-transform"
-                          style={{
-                            color: "var(--muted-foreground)",
-                            transform: expandedModel === i ? "rotate(180deg)" : "rotate(0deg)",
-                          }}
+                          className={`text-muted-foreground transition-transform ${expandedModel === i ? "rotate-180" : ""}`}
                         >
                           <polyline points="6 9 12 15 18 9" />
                         </svg>
@@ -336,7 +278,7 @@ export default function Playground() {
                     </button>
                     {expandedModel === i && (
                       <div className="px-[var(--space-6x)] pb-[var(--space-4x)]">
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "var(--foreground)" }}>
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">
                           {r.answer}
                         </p>
                       </div>
@@ -366,15 +308,15 @@ function ProgressIndicator({ phase }: { phase: Phase }) {
     <div className="mb-[var(--space-6x)]">
       <div className="flex items-center gap-[var(--space-2x)] mb-[var(--space-3x)]">
         {phase !== "done" && phase !== "error" && (
-          <div
-            className="w-4 h-4 rounded-full border-2 animate-spin"
-            style={{
-              borderColor: "var(--progress-border)",
-              borderTopColor: "var(--progress-foreground)",
-            }}
-          />
+          <div className="w-4 h-4 rounded-full border-2 border-progress-border border-t-progress-foreground animate-spin" />
         )}
-        <span className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
+        {phase === "done" && (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-success-foreground">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+            <path d="M8 12l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+        <span className="text-sm font-medium text-foreground">
           {PHASE_LABELS[phase]}
         </span>
       </div>
@@ -385,14 +327,13 @@ function ProgressIndicator({ phase }: { phase: Phase }) {
           return (
             <div
               key={step.key}
-              className="flex-1 h-1.5 rounded-full transition-colors"
-              style={{
-                background: isDone
-                  ? "var(--success-foreground)"
+              className={`flex-1 h-1.5 rounded-full transition-colors ${
+                isDone
+                  ? "bg-success-foreground"
                   : isActive
-                    ? "var(--progress-foreground)"
-                    : "var(--muted-more)",
-              }}
+                    ? "bg-progress-foreground"
+                    : "bg-muted-more"
+              }`}
             />
           );
         })}
