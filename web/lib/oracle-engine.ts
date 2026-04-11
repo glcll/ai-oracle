@@ -1,5 +1,4 @@
 import { MODELS, type OracleResult, type ModelResponse, type ScoreMatrix } from "./types";
-import { setResult } from "./kv";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -7,7 +6,8 @@ async function callModel(
   modelId: string,
   systemPrompt: string,
   userPrompt: string,
-  apiKey: string
+  apiKey: string,
+  maxTokens = 512
 ): Promise<string> {
   const res = await fetch(OPENROUTER_URL, {
     method: "POST",
@@ -23,7 +23,7 @@ async function callModel(
         { role: "user", content: userPrompt },
       ],
       temperature: 0.3,
-      max_tokens: 1024,
+      max_tokens: maxTokens,
     }),
   });
 
@@ -55,17 +55,17 @@ function parseJsonResponse(raw: string): Record<string, unknown> | null {
 export async function runOracleConsensus(
   requestId: string,
   prompt: string
-): Promise<void> {
+): Promise<OracleResult> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    await setResult({
+    return {
       requestId,
       status: "failed",
       error: "OPENROUTER_API_KEY not configured",
-    });
-    return;
+    };
   }
 
+  const submittedAt = new Date().toISOString();
   try {
     // Phase 1: Query all 3 models
     const generationPrompt = `Answer the following question thoughtfully and concisely. Respond with valid JSON only: { "answer": "your detailed answer here", "confidence": <integer 1-10> }`;
@@ -105,7 +105,8 @@ Score each response on accuracy, completeness, and clarity (1-10 integer scale).
           m.openRouterId,
           "You are an impartial AI response evaluator. Score responses 1-10. Return only JSON.",
           judgePrompt(answers[0], answers[1], answers[2]),
-          apiKey
+          apiKey,
+          128
         )
       )
     );
@@ -151,7 +152,7 @@ Score each response on accuracy, completeness, and clarity (1-10 integer scale).
 
     const completedAt = new Date().toISOString();
 
-    await setResult({
+    return {
       requestId,
       status: "completed",
       prompt,
@@ -166,16 +167,18 @@ Score each response on accuracy, completeness, and clarity (1-10 integer scale).
       },
       allResponses,
       timing: {
-        submittedAt: new Date().toISOString(),
+        submittedAt,
         completedAt,
+        durationMs: new Date(completedAt).getTime() - new Date(submittedAt).getTime(),
       },
-    });
+    };
   } catch (err) {
-    await setResult({
+    return {
       requestId,
       status: "failed",
+      prompt,
       error: err instanceof Error ? err.message : "Unknown error",
-    });
+    };
   }
 }
 

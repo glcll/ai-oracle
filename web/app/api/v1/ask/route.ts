@@ -1,6 +1,5 @@
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 import { generateRequestId, setResult } from "@/lib/kv";
-import { triggerCREWorkflow } from "@/lib/cre-trigger";
 import { runOracleConsensus } from "@/lib/oracle-engine";
 import { MODELS } from "@/lib/types";
 
@@ -54,54 +53,16 @@ export async function POST(request: Request) {
   }
 
   const requestId = generateRequestId();
-  const now = new Date().toISOString();
-
-  await setResult({
-    requestId,
-    status: "pending",
-    prompt,
-    timing: { submittedAt: now },
-  });
 
   const timestamps = rateLimitMap.get(ip) ?? [];
   timestamps.push(Date.now());
   rateLimitMap.set(ip, timestamps);
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL ??
-    request.headers.get("origin") ??
-    "http://localhost:3000";
+  const result = await runOracleConsensus(requestId, prompt);
 
-  after(async () => {
-    try {
-      if (process.env.CRE_WORKFLOW_ID) {
-        await triggerCREWorkflow({
-          prompt,
-          requestId,
-          callbackUrl: `${baseUrl}/api/v1/webhook`,
-        });
-      } else {
-        await runOracleConsensus(requestId, prompt);
-      }
-    } catch (err) {
-      console.error("Oracle processing failed:", err);
-      await setResult({
-        requestId,
-        status: "failed",
-        prompt,
-        timing: { submittedAt: now, completedAt: new Date().toISOString() },
-        error: String(err),
-      });
-    }
+  await setResult(result);
+
+  return NextResponse.json(result, {
+    status: result.status === "completed" ? 200 : 500,
   });
-
-  return NextResponse.json(
-    {
-      requestId,
-      status: "pending",
-      statusUrl: `/api/v1/result/${requestId}`,
-      models: MODELS.map((m) => m.id),
-    },
-    { status: 202 }
-  );
 }
