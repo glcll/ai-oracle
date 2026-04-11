@@ -2,10 +2,10 @@
   "openRouterUrl": "https://openrouter.ai/api/v1/chat/completions",
   "models": [
     "meta-llama/llama-3.3-70b-instruct:free",
-    "deepseek/deepseek-r1-0528:free",
-    "qwen/qwen3-next-80b:free"
+    "google/gemma-3-27b-it:free",
+    "qwen/qwen3-next-80b-a3b-instruct:free"
   ],
-  "modelNames": ["llama-3.3-70b", "deepseek-r1-0528", "qwen3-next-80b"],
+  "modelNames": ["llama-3.3-70b", "gemma-3-27b", "qwen3-next-80b"],
   "webhookUrl": "https://web-inky-one-56.vercel.app/api/v1/webhook",
   "temperature": 0.3,
   "maxTokens": 1024,

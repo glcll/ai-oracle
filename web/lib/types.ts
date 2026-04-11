@@ -6,15 +6,15 @@ export const MODELS = [
     provider: "Meta",
   },
   {
-    id: "deepseek-r1-0528",
-    name: "DeepSeek R1",
-    openRouterId: "deepseek/deepseek-r1-0528:free",
-    provider: "DeepSeek",
+    id: "gemma-3-27b",
+    name: "Gemma 3 27B",
+    openRouterId: "google/gemma-3-27b-it:free",
+    provider: "Google",
   },
   {
     id: "qwen3-next-80b",
-    name: "Qwen3 80B",
-    openRouterId: "qwen/qwen3-next-80b:free",
+    name: "Qwen3 Next 80B",
+    openRouterId: "qwen/qwen3-next-80b-a3b-instruct:free",
     provider: "Alibaba",
   },
 ] as const;
