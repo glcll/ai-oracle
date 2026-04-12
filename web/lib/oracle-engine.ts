@@ -75,11 +75,11 @@ export async function runOracleConsensusStreaming(
     });
 
     const generationPrompt =
-      'Reply JSON: {"answer":"...","confidence":N}';
+      'Answer the question clearly and concisely. Return valid JSON: {"answer":"your full answer here","confidence":<1-10>}';
 
     const rawResponses = await Promise.all(
       WORKER_MODELS.map(async (m, i) => {
-        const result = await callModel(m.openRouterId, generationPrompt, prompt, apiKey, 128);
+        const result = await callModel(m.openRouterId, generationPrompt, prompt, apiKey, 512);
         send({ type: "model_done", phase: "generation", model: m.id, index: i });
         return result;
       })
@@ -107,10 +107,10 @@ export async function runOracleConsensusStreaming(
 
     const judgeResult = await callModel(
       judge.openRouterId,
-      "Score 1-10. JSON only.",
+      "Score each answer 1-10 for accuracy and clarity. Return only JSON.",
       judgePromptText,
       apiKey,
-      32
+      64
     );
     send({ type: "model_done", phase: "judging", model: judge.id, index: 0 });
 

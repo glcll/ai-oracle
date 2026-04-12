@@ -235,7 +235,12 @@ export default function Playground() {
                   </span>
                 </div>
                 <p className="text-base leading-relaxed whitespace-pre-wrap text-foreground">
-                  {result.response}
+                  {result.response
+                    || result.allResponses?.find(
+                        (r) => r.model === result.consensus?.winningModel
+                      )?.answer
+                    || result.allResponses?.[result.consensus?.winningIndex ?? 0]?.answer
+                    || "No response text available."}
                 </p>
                 {result.timing?.durationMs && (
                   <p className="mt-[var(--space-3x)] text-xs text-muted-foreground">

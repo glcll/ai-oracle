@@ -2,6 +2,37 @@ import { NextResponse } from "next/server";
 import { setResult } from "@/lib/kv";
 import { WORKER_MODELS, JUDGE_MODELS, type ScoreMatrix, type ModelResponse } from "@/lib/types";
 
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+async function fetchAnswer(modelId: string, prompt: string): Promise<string> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return "(no API key configured)";
+
+  try {
+    const res = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: modelId,
+        messages: [
+          { role: "system", content: "Answer concisely and directly." },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.1,
+        max_tokens: 256,
+      }),
+    });
+    if (!res.ok) return "(failed to fetch answer)";
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content ?? "";
+  } catch {
+    return "(error fetching answer)";
+  }
+}
+
 export async function POST(request: Request) {
   const webhookSecret = process.env.WEBHOOK_SECRET;
 
@@ -68,10 +99,23 @@ export async function POST(request: Request) {
   }
 
   const winningIndex = body.winnerIndex ?? scores.indexOf(Math.max(...scores.slice(0, workerCount)));
+  const winningModel = WORKER_MODELS[winningIndex];
 
-  const allResponses: ModelResponse[] = responses.map((resp, i) => ({
+  const hasResponses = responses.some((r) => r && r.trim().length > 0);
+  let finalResponses = responses;
+
+  if (!hasResponses && prompt && winningModel) {
+    const answer = await fetchAnswer(winningModel.openRouterId, prompt);
+    finalResponses = responses.map((r, i) =>
+      i === winningIndex ? answer : r || ""
+    );
+  }
+
+  const winningResponse = finalResponses[winningIndex] || "";
+
+  const allResponses: ModelResponse[] = finalResponses.map((resp, i) => ({
     model: WORKER_MODELS[i]?.id || `worker-${i}`,
-    answer: resp,
+    answer: resp || "",
     confidence: confidences?.[i] ?? 5,
     avgScore: avgScores[WORKER_MODELS[i]?.id || `worker-${i}`] ?? 5,
   }));
@@ -80,9 +124,9 @@ export async function POST(request: Request) {
     requestId,
     status: "completed",
     prompt,
-    response: responses[winningIndex],
+    response: winningResponse,
     consensus: {
-      winningModel: WORKER_MODELS[winningIndex]?.id || `worker-${winningIndex}`,
+      winningModel: winningModel?.id || `worker-${winningIndex}`,
       winningIndex,
       averageScores: avgScores,
       scoreMatrix,
