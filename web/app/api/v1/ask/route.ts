@@ -72,9 +72,12 @@ export async function POST(request: Request) {
         });
       }
 
-      console.error(`CRE trigger failed [${cre.error}], falling back to local engine`);
+      const creErr = cre.error ?? "unknown";
+      console.error(`CRE trigger failed: ${creErr}`);
+      // Temporarily return CRE error for debugging; will fall through to local engine after
     } catch (err) {
-      console.error(`CRE trigger threw [${err instanceof Error ? err.message : String(err)}], falling back to local engine`);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`CRE trigger threw: ${msg}`);
     }
   }
 
