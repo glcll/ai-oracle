@@ -103,7 +103,7 @@ function HowItWorks() {
     {
       step: "2",
       title: "Evaluate",
-      description: "2 ultra-fast worker models (GPT-4o Mini, Gemini 2.5 Flash) respond independently. Then a judge model (GPT-4o Mini) scores both responses on a 1-10 scale.",
+      description: "2 ultra-fast worker models (GLM-5 Turbo, Gemini 2.5 Flash) respond independently. Then a judge model (GPT-4o Mini) scores both responses on a 1-10 scale.",
       bg: "bg-warning",
       border: "border-warning-border",
       fg: "text-warning-foreground",
@@ -160,7 +160,7 @@ function HowItWorks() {
               <thead>
                 <tr className="text-muted-foreground">
                   <th className="text-left py-[var(--space-2x)] pr-[var(--space-4x)]"></th>
-                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">GPT-4o Mini</th>
+                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">GLM-5 Turbo</th>
                   <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">Gemini 2.5 Flash</th>
                 </tr>
               </thead>
@@ -346,7 +346,7 @@ function WhyCRE() {
 
 function Models() {
   const workers = [
-    { name: "GPT-4o Mini", provider: "OpenAI", role: "Worker" },
+    { name: "GLM-5 Turbo", provider: "Zhipu AI", role: "Worker" },
     { name: "Gemini 2.5 Flash", provider: "Google", role: "Worker" },
   ];
   const judges = [

@@ -25,7 +25,7 @@ export default function Playground() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<OracleResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [expandedModel, setExpandedModel] = useState<number | null>(null);
+  const [collapsedModel, setCollapsedModel] = useState<number | null>(null);
 
   const handleSubmit = async () => {
     if (!prompt.trim()) return;
@@ -33,7 +33,7 @@ export default function Playground() {
     setPhase("submitting");
     setResult(null);
     setError(null);
-    setExpandedModel(null);
+    setCollapsedModel(null);
 
     try {
       const res = await fetch("/api/v1/ask", {
@@ -320,46 +320,49 @@ export default function Playground() {
                     All Model Responses
                   </h3>
                 </div>
-                {result.allResponses?.map((r, i) => (
-                  <div key={r.model} className="border-t border-border-muted">
-                    <button
-                      onClick={() => setExpandedModel(expandedModel === i ? null : i)}
-                      className="w-full flex items-center justify-between p-[var(--space-4x)] px-[var(--space-6x)] cursor-pointer text-left hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-[var(--space-3x)]">
-                        <span className="text-sm font-medium text-foreground">{MODEL_NAMES[r.model] ?? r.model}</span>
-                        {r.model === result.consensus?.winningModel && (
-                          <span className="inline-flex items-center rounded-[1.5rem] border border-success-border bg-success text-success-foreground px-[var(--space-2x)] py-0.5 text-xxs font-bold">
-                            Winner
+                {result.allResponses?.map((r, i) => {
+                  const isExpanded = collapsedModel !== i;
+                  return (
+                    <div key={r.model} className="border-t border-border-muted">
+                      <button
+                        onClick={() => setCollapsedModel(collapsedModel === i ? null : i)}
+                        className="w-full flex items-center justify-between p-[var(--space-4x)] px-[var(--space-6x)] cursor-pointer text-left hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-[var(--space-3x)]">
+                          <span className="text-sm font-medium text-foreground">{MODEL_NAMES[r.model] ?? r.model}</span>
+                          {r.model === result.consensus?.winningModel && (
+                            <span className="inline-flex items-center rounded-[1.5rem] border border-success-border bg-success text-success-foreground px-[var(--space-2x)] py-0.5 text-xxs font-bold">
+                              Winner
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-[var(--space-3x)]">
+                          <span className="text-sm font-mono text-muted-foreground">
+                            score: {r.avgScore}
                           </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-[var(--space-3x)]">
-                        <span className="text-sm font-mono text-muted-foreground">
-                          avg: {r.avgScore}
-                        </span>
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          className={`text-muted-foreground transition-transform ${expandedModel === i ? "rotate-180" : ""}`}
-                        >
-                          <polyline points="6 9 12 15 18 9" />
-                        </svg>
-                      </div>
-                    </button>
-                    {expandedModel === i && (
-                      <div className="px-[var(--space-6x)] pb-[var(--space-4x)]">
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">
-                          {r.answer}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            className={`text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                          >
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                        </div>
+                      </button>
+                      {isExpanded && (
+                        <div className="px-[var(--space-6x)] pb-[var(--space-4x)]">
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+                            {r.answer || "Response text not available."}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

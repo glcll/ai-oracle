@@ -7,10 +7,10 @@ export interface ModelDef {
 
 export const WORKER_MODELS: ModelDef[] = [
   {
-    id: "gpt-4o-mini",
-    name: "GPT-4o Mini",
-    openRouterId: "openai/gpt-4o-mini",
-    provider: "OpenAI",
+    id: "glm-5-turbo",
+    name: "GLM-5 Turbo",
+    openRouterId: "z-ai/glm-5-turbo",
+    provider: "Zhipu AI",
   },
   {
     id: "gemini-2.5-flash",

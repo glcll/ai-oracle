@@ -15,7 +15,7 @@ export async function GET() {
       provider: m.provider,
       openRouterId: m.openRouterId,
     })),
-    judgingMethod: "Single ultra-fast judge (GPT-4o Mini) scores both worker responses 1-10",
+    judgingMethod: "Single judge (GPT-4o Mini) scores both worker responses 1-10",
     consensusMethod: "median-aggregation across DON nodes (2 workers + 1 judge)",
   });
 }

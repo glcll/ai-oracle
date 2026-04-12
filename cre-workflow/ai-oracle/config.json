@@ -1,10 +1,10 @@
 {
   "openRouterUrl": "https://openrouter.ai/api/v1/chat/completions",
   "workerModels": [
-    "openai/gpt-4o-mini",
+    "z-ai/glm-5-turbo",
     "google/gemini-2.5-flash"
   ],
-  "workerModelNames": ["gpt-4o-mini", "gemini-2.5-flash"],
+  "workerModelNames": ["glm-5-turbo", "gemini-2.5-flash"],
   "judgeModel": "openai/gpt-4o-mini",
   "judgeModelName": "gpt-4o-mini",
   "webhookUrl": "http://localhost:3000/api/v1/webhook",
