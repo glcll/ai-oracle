@@ -42,37 +42,40 @@ export async function POST(request: Request) {
   // The workflow runs on DON nodes, reaches consensus, and posts the result
   // back to /api/v1/webhook. The client polls /api/v1/result/:id.
   if (isCREConfigured()) {
-    const baseUrl =
-      process.env.VERCEL_PROJECT_PRODUCTION_URL
-        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-        : process.env.VERCEL_URL
-          ? `https://${process.env.VERCEL_URL}`
-          : "https://ai-oracle-council.vercel.app";
+    try {
+      const baseUrl =
+        process.env.VERCEL_PROJECT_PRODUCTION_URL
+          ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+          : process.env.VERCEL_URL
+            ? `https://${process.env.VERCEL_URL}`
+            : "https://ai-oracle-council.vercel.app";
 
-    const callbackUrl = `${baseUrl}/api/v1/webhook`;
+      const callbackUrl = `${baseUrl}/api/v1/webhook`;
 
-    await setResult({
-      requestId,
-      status: "pending",
-      prompt,
-    });
-
-    const cre = await triggerCREWorkflow({ prompt, requestId, callbackUrl });
-
-    if (cre.success) {
-      return Response.json({
+      await setResult({
         requestId,
         status: "pending",
-        statusUrl: `/api/v1/result/${requestId}`,
-        executionId: cre.executionId,
-        engine: "cre",
-        workerModels: WORKER_MODELS.map((m) => m.id),
-        judgeModels: JUDGE_MODELS.map((m) => m.id),
+        prompt,
       });
-    }
 
-    // CRE trigger failed — fall through to local engine
-    console.error("CRE trigger failed, falling back to local engine:", cre.error);
+      const cre = await triggerCREWorkflow({ prompt, requestId, callbackUrl });
+
+      if (cre.success) {
+        return Response.json({
+          requestId,
+          status: "pending",
+          statusUrl: `/api/v1/result/${requestId}`,
+          executionId: cre.executionId,
+          engine: "cre",
+          workerModels: WORKER_MODELS.map((m) => m.id),
+          judgeModels: JUDGE_MODELS.map((m) => m.id),
+        });
+      }
+
+      console.error("CRE trigger failed, falling back to local engine:", cre.error);
+    } catch (err) {
+      console.error("CRE trigger threw, falling back to local engine:", err);
+    }
   }
 
   // Fallback: local streaming engine (runs entirely in this serverless function)
