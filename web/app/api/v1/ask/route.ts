@@ -72,9 +72,9 @@ export async function POST(request: Request) {
         });
       }
 
-      console.error("CRE trigger failed, falling back to local engine:", cre.error);
+      console.error(`CRE trigger failed [${cre.error}], falling back to local engine`);
     } catch (err) {
-      console.error("CRE trigger threw, falling back to local engine:", err);
+      console.error(`CRE trigger threw [${err instanceof Error ? err.message : String(err)}], falling back to local engine`);
     }
   }
 
