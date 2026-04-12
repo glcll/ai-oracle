@@ -103,7 +103,23 @@ export default function Playground() {
           </div>
           <span className="font-display text-lg font-bold text-foreground">AI Oracle</span>
         </Link>
-        <span className="text-sm font-medium text-muted-foreground">Playground</span>
+        <div className="flex items-center gap-[var(--space-6x)]">
+          <Link href="/#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            How it works
+          </Link>
+          <Link href="/#why-cre" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            Why CRE
+          </Link>
+          <Link href="/#api" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            API
+          </Link>
+          <Link
+            href="/playground"
+            className="inline-flex items-center justify-center rounded-[var(--border-radius-primary)] px-[var(--space-4x)] py-[var(--space-2x)] text-sm font-medium bg-primary text-primary-foreground hover:bg-primary-hover transition-colors"
+          >
+            Try it
+          </Link>
+        </div>
       </nav>
 
       {/* Main */}
