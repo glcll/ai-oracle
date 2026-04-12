@@ -75,14 +75,26 @@ export async function triggerCREWorkflow(payload: {
     body: sortedBody,
   });
 
+  const text = await response.text();
+
   if (!response.ok) {
-    const text = await response.text();
-    return { success: false, error: `CRE gateway error ${response.status}: ${text}` };
+    return { success: false, error: `CRE gateway HTTP ${response.status}: ${text.slice(0, 500)}` };
   }
 
-  const data = await response.json();
+  let data: Record<string, unknown>;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return { success: false, error: `CRE gateway returned non-JSON: ${text.slice(0, 200)}` };
+  }
+
+  if (data.error) {
+    const err = data.error as Record<string, unknown>;
+    return { success: false, error: `CRE gateway error: ${err.message || JSON.stringify(err)}` };
+  }
+
   return {
     success: true,
-    executionId: data?.result?.workflow_execution_id,
+    executionId: (data.result as Record<string, unknown>)?.workflow_execution_id as string,
   };
 }
