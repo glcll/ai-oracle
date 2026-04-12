@@ -15,7 +15,7 @@ export async function GET() {
       provider: m.provider,
       openRouterId: m.openRouterId,
     })),
-    judgingMethod: "Single fast judge (Gemini 2.5 Flash) scores all 3 worker responses 1-10",
-    consensusMethod: "median-aggregation across DON nodes",
+    judgingMethod: "Single ultra-fast judge (GPT-4o Mini) scores both worker responses 1-10",
+    consensusMethod: "median-aggregation across DON nodes (2 workers + 1 judge)",
   });
 }

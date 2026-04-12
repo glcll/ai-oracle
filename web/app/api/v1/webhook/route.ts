@@ -30,24 +30,23 @@ export async function POST(request: Request) {
   }
 
   const { requestId, prompt, scores, responses, confidences, nodeCount } = body;
+  const workerCount = responses?.length ?? 0;
 
-  if (!requestId || !scores || !responses || responses.length !== 3) {
+  if (!requestId || !scores || !responses || workerCount < 2) {
     return NextResponse.json({ error: "Invalid report format" }, { status: 400 });
   }
 
   const scoreMatrix: ScoreMatrix = {};
   const avgScores: { [model: string]: number } = {};
 
-  if (scores.length === 3) {
-    // 3W+1J format: scores = [score_worker_0, score_worker_1, score_worker_2]
+  if (scores.length === workerCount) {
     const judgeName = body.judgeModel || JUDGE_MODELS[0]?.id || "judge";
-    for (let r = 0; r < 3; r++) {
+    for (let r = 0; r < workerCount; r++) {
       const workerId = WORKER_MODELS[r]?.id || `worker-${r}`;
       scoreMatrix[workerId] = { judgedBy: { [judgeName]: scores[r] } };
       avgScores[workerId] = scores[r];
     }
   } else if (scores.length === 9) {
-    // 3W+3J format (legacy): scores = [j0s0,j0s1,j0s2, j1s0,j1s1,j1s2, j2s0,j2s1,j2s2]
     const totals = [0, 0, 0];
     for (let j = 0; j < 3; j++) {
       for (let r = 0; r < 3; r++) {
@@ -65,16 +64,16 @@ export async function POST(request: Request) {
       avgScores[WORKER_MODELS[r]?.id || `worker-${r}`] = Math.round((totals[r] / 3) * 100) / 100;
     }
   } else {
-    return NextResponse.json({ error: "scores must be length 3 or 9" }, { status: 400 });
+    return NextResponse.json({ error: `scores length ${scores.length} does not match worker count ${workerCount}` }, { status: 400 });
   }
 
-  const winningIndex = body.winnerIndex ?? scores.indexOf(Math.max(...scores.slice(0, 3)));
+  const winningIndex = body.winnerIndex ?? scores.indexOf(Math.max(...scores.slice(0, workerCount)));
 
-  const allResponses: ModelResponse[] = WORKER_MODELS.map((m, i) => ({
-    model: m.id,
-    answer: responses[i],
+  const allResponses: ModelResponse[] = responses.map((resp, i) => ({
+    model: WORKER_MODELS[i]?.id || `worker-${i}`,
+    answer: resp,
     confidence: confidences?.[i] ?? 5,
-    avgScore: avgScores[m.id] ?? 5,
+    avgScore: avgScores[WORKER_MODELS[i]?.id || `worker-${i}`] ?? 5,
   }));
 
   await setResult({
@@ -88,7 +87,7 @@ export async function POST(request: Request) {
       averageScores: avgScores,
       scoreMatrix,
       nodeCount: nodeCount ?? 5,
-      consensusMethod: "median-aggregation-3x3",
+      consensusMethod: "median-aggregation-2w1j",
     },
     allResponses,
     timing: {

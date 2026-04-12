@@ -7,31 +7,25 @@ export interface ModelDef {
 
 export const WORKER_MODELS: ModelDef[] = [
   {
-    id: "gemini-2.5-flash",
-    name: "Gemini 2.5 Flash",
-    openRouterId: "google/gemini-2.5-flash",
-    provider: "Google",
-  },
-  {
     id: "gpt-4o-mini",
     name: "GPT-4o Mini",
     openRouterId: "openai/gpt-4o-mini",
     provider: "OpenAI",
   },
   {
-    id: "qwen3.6-plus",
-    name: "Qwen 3.6 Plus",
-    openRouterId: "qwen/qwen3.6-plus",
-    provider: "Alibaba",
+    id: "gemini-2.5-flash",
+    name: "Gemini 2.5 Flash",
+    openRouterId: "google/gemini-2.5-flash",
+    provider: "Google",
   },
 ];
 
 export const JUDGE_MODELS: ModelDef[] = [
   {
-    id: "gemini-2.5-flash",
-    name: "Gemini 2.5 Flash",
-    openRouterId: "google/gemini-2.5-flash",
-    provider: "Google",
+    id: "gpt-4o-mini",
+    name: "GPT-4o Mini",
+    openRouterId: "openai/gpt-4o-mini",
+    provider: "OpenAI",
   },
 ];
 
@@ -65,7 +59,7 @@ export interface ConsensusData {
   averageScores: { [model: string]: number };
   scoreMatrix: ScoreMatrix;
   nodeCount: number;
-  consensusMethod: "median-aggregation-3x3";
+  consensusMethod: "median-aggregation-2w1j";
 }
 
 export interface OracleResult {

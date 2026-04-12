@@ -48,8 +48,8 @@ function Hero() {
       </h1>
 
       <p className="mt-[var(--space-6x)] text-lg max-w-2xl leading-relaxed text-muted-foreground">
-        Send a prompt to the Chainlink oracle network. 3 worker models respond, 3 independent
-        judge models cross-evaluate, and DON nodes reach consensus on the best answer. One API call.
+        Send a prompt to the Chainlink oracle network. 2 ultra-fast worker models respond,
+        1 judge scores both, and DON nodes reach consensus on the best answer. One API call.
       </p>
 
       <div className="flex gap-[var(--space-4x)] mt-[var(--space-10x)]">
@@ -103,7 +103,7 @@ function HowItWorks() {
     {
       step: "2",
       title: "Evaluate",
-      description: "3 worker models (Qwen 3.6 Plus, DeepSeek V3.2, Gemini 2.5 Flash) respond independently. Then 3 separate judge models (Gemini 2.5 Pro, MiniMax M2.7, GPT-4o Mini) score all responses on a 1-10 scale.",
+      description: "2 ultra-fast worker models (GPT-4o Mini, Gemini 2.5 Flash) respond independently. Then a judge model (GPT-4o Mini) scores both responses on a 1-10 scale.",
       bg: "bg-warning",
       border: "border-warning-border",
       fg: "text-warning-foreground",
@@ -149,46 +149,28 @@ function HowItWorks() {
 
         <div className="mt-[var(--space-10x)] rounded-[var(--border-radius-secondary)] border border-card-border bg-card p-[var(--space-6x)]">
           <h3 className="font-display text-lg font-bold mb-[var(--space-4x)] text-foreground">
-            3x3 Scoring Matrix
+            Scoring Matrix
           </h3>
           <p className="text-sm mb-[var(--space-4x)] text-muted-foreground">
-            3 worker models generate responses, then 3 independent judge models score each response.
-            The highest average score wins.
+            2 worker models generate responses, then 1 judge model scores each response.
+            The highest score wins. DON nodes run this independently and reach median-aggregated consensus.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm font-mono">
               <thead>
                 <tr className="text-muted-foreground">
                   <th className="text-left py-[var(--space-2x)] pr-[var(--space-4x)]"></th>
-                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">Qwen 3.6+</th>
-                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">DeepSeek V3.2</th>
-                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">Gemini Flash</th>
+                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">GPT-4o Mini</th>
+                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">Gemini 2.5 Flash</th>
                 </tr>
               </thead>
               <tbody className="text-foreground">
-                {[
-                  { judge: "Gemini 2.5 Pro", scores: [7, 8, 6] },
-                  { judge: "MiniMax M2.7", scores: [8, 9, 7] },
-                  { judge: "GPT-4o Mini", scores: [7, 8, 5] },
-                ].map((row) => (
-                  <tr key={row.judge} className="border-t border-border-muted">
-                    <td className="py-[var(--space-2x)] pr-[var(--space-4x)] text-left text-muted-foreground">
-                      {row.judge}
-                    </td>
-                    {row.scores.map((score, i) => (
-                      <td key={i} className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">
-                        {score}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-                <tr className="border-t border-border font-bold">
-                  <td className="py-[var(--space-2x)] pr-[var(--space-4x)] text-muted-foreground">Average</td>
-                  <td className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">7.33</td>
-                  <td className="text-center py-[var(--space-2x)] px-[var(--space-3x)] text-success-foreground">
-                    8.33
+                <tr className="border-t border-border-muted">
+                  <td className="py-[var(--space-2x)] pr-[var(--space-4x)] text-left text-muted-foreground">
+                    GPT-4o Mini
                   </td>
-                  <td className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">6.00</td>
+                  <td className="text-center py-[var(--space-2x)] px-[var(--space-3x)] text-success-foreground font-bold">8</td>
+                  <td className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">7</td>
                 </tr>
               </tbody>
             </table>
@@ -224,7 +206,7 @@ function ApiReference() {
             {
               method: "GET",
               path: "/api/v1/result/:id",
-              desc: "Poll for the consensus result. Returns the winning response, full 3x3 score matrix, and all model responses.",
+              desc: "Poll for the consensus result. Returns the winning response, score matrix, and all model responses.",
               body: null,
               tagBg: "bg-progress",
               tagBorder: "border-progress-border",
@@ -278,8 +260,8 @@ function WhyCRE() {
   const cre = [
     { label: "Decentralized oracle network", desc: "Runs across independent DON nodes. No single operator can censor or tamper with results." },
     { label: "Cryptographic attestation", desc: "Every response is signed by the nodes that produced it. Verifiable on-chain." },
-    { label: "Multi-model by design", desc: "3 models respond independently. You see every answer, not just the one someone picked for you." },
-    { label: "BFT consensus on quality", desc: "A 3x3 cross-evaluation matrix scored by median aggregation — outliers and hallucinations get filtered." },
+    { label: "Multi-model by design", desc: "Multiple models respond independently. You see every answer, not just the one someone picked for you." },
+    { label: "BFT consensus on quality", desc: "An independent judge scores each response, and DON nodes reach median-aggregated consensus — outliers and hallucinations get filtered." },
     { label: "Immutable results", desc: "Consensus output can be anchored on-chain. The record can't be changed after the fact." },
   ];
 
@@ -364,13 +346,10 @@ function WhyCRE() {
 
 function Models() {
   const workers = [
-    { name: "Qwen 3.6 Plus", provider: "Alibaba", role: "Worker" },
-    { name: "DeepSeek V3.2", provider: "DeepSeek", role: "Worker" },
+    { name: "GPT-4o Mini", provider: "OpenAI", role: "Worker" },
     { name: "Gemini 2.5 Flash", provider: "Google", role: "Worker" },
   ];
   const judges = [
-    { name: "Gemini 2.5 Pro", provider: "Google", role: "Judge" },
-    { name: "MiniMax M2.7", provider: "MiniMax", role: "Judge" },
     { name: "GPT-4o Mini", provider: "OpenAI", role: "Judge" },
   ];
 
@@ -381,62 +360,50 @@ function Models() {
           The Oracle Council
         </h2>
         <p className="text-center text-base mb-[var(--space-12x)] max-w-2xl mx-auto text-muted-foreground">
-          Six models, two roles. Workers generate answers independently.
-          Judges evaluate every response. No single model decides.
+          Three models, two roles. Workers generate answers independently.
+          A judge scores both responses. DON nodes reach consensus.
         </p>
 
-        <div className="space-y-[var(--space-10x)]">
-          {/* Workers */}
-          <div>
-            <div className="flex items-center gap-[var(--space-3x)] mb-[var(--space-6x)]">
-              <span className="inline-flex items-center rounded-[1.5rem] border border-progress-border bg-progress text-progress-foreground px-[var(--space-3x)] py-[var(--space-1x)] text-xs font-bold">
-                Workers
-              </span>
-              <span className="text-sm text-muted-foreground">Generate responses to your prompt</span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-[var(--space-6x)]">
+          {workers.map((m) => (
+            <div
+              key={`worker-${m.name}`}
+              className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card p-[var(--space-6x)] text-center"
+            >
+              <div className="w-12 h-12 mx-auto rounded-full flex items-center justify-center text-lg font-bold mb-[var(--space-4x)] bg-progress/30 text-progress-foreground border border-progress-border">
+                {m.name[0]}
+              </div>
+              <div className="mb-[var(--space-2x)]">
+                <span className="inline-flex items-center rounded-[1.5rem] border border-progress-border bg-progress text-progress-foreground px-[var(--space-2x)] py-0.5 text-xxs font-bold">
+                  Worker
+                </span>
+              </div>
+              <h3 className="font-display text-base font-bold mb-[var(--space-1x)] text-foreground">
+                {m.name}
+              </h3>
+              <p className="text-xs text-muted-foreground">{m.provider}</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-[var(--space-6x)]">
-              {workers.map((m) => (
-                <div
-                  key={m.name}
-                  className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card p-[var(--space-6x)] text-center"
-                >
-                  <div className="w-12 h-12 mx-auto rounded-full flex items-center justify-center text-lg font-bold mb-[var(--space-4x)] bg-progress/30 text-progress-foreground border border-progress-border">
-                    {m.name[0]}
-                  </div>
-                  <h3 className="font-display text-base font-bold mb-[var(--space-1x)] text-foreground">
-                    {m.name}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">{m.provider}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          ))}
 
-          {/* Judges */}
-          <div>
-            <div className="flex items-center gap-[var(--space-3x)] mb-[var(--space-6x)]">
-              <span className="inline-flex items-center rounded-[1.5rem] border border-warning-border bg-warning text-warning-foreground px-[var(--space-3x)] py-[var(--space-1x)] text-xs font-bold">
-                Judges
-              </span>
-              <span className="text-sm text-muted-foreground">Score every worker response 1-10</span>
+          {judges.map((m) => (
+            <div
+              key={`judge-${m.name}`}
+              className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card p-[var(--space-6x)] text-center"
+            >
+              <div className="w-12 h-12 mx-auto rounded-full flex items-center justify-center text-lg font-bold mb-[var(--space-4x)] bg-warning/30 text-warning-foreground border border-warning-border">
+                {m.name[0]}
+              </div>
+              <div className="mb-[var(--space-2x)]">
+                <span className="inline-flex items-center rounded-[1.5rem] border border-warning-border bg-warning text-warning-foreground px-[var(--space-2x)] py-0.5 text-xxs font-bold">
+                  Judge
+                </span>
+              </div>
+              <h3 className="font-display text-base font-bold mb-[var(--space-1x)] text-foreground">
+                {m.name}
+              </h3>
+              <p className="text-xs text-muted-foreground">{m.provider}</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-[var(--space-6x)]">
-              {judges.map((m) => (
-                <div
-                  key={m.name}
-                  className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card p-[var(--space-6x)] text-center"
-                >
-                  <div className="w-12 h-12 mx-auto rounded-full flex items-center justify-center text-lg font-bold mb-[var(--space-4x)] bg-warning/30 text-warning-foreground border border-warning-border">
-                    {m.name[0]}
-                  </div>
-                  <h3 className="font-display text-base font-bold mb-[var(--space-1x)] text-foreground">
-                    {m.name}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">{m.provider}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </section>

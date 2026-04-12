@@ -1,16 +1,15 @@
 {
   "openRouterUrl": "https://openrouter.ai/api/v1/chat/completions",
   "workerModels": [
-    "google/gemini-2.5-flash",
     "openai/gpt-4o-mini",
-    "qwen/qwen3.6-plus"
+    "google/gemini-2.5-flash"
   ],
-  "workerModelNames": ["gemini-2.5-flash", "gpt-4o-mini", "qwen3.6-plus"],
-  "judgeModel": "google/gemini-2.5-flash",
-  "judgeModelName": "gemini-2.5-flash",
+  "workerModelNames": ["gpt-4o-mini", "gemini-2.5-flash"],
+  "judgeModel": "openai/gpt-4o-mini",
+  "judgeModelName": "gpt-4o-mini",
   "webhookUrl": "https://ai-oracle-council.vercel.app/api/v1/webhook",
   "temperature": 0.1,
-  "workerMaxTokens": 256,
-  "judgeMaxTokens": 64,
+  "workerMaxTokens": 128,
+  "judgeMaxTokens": 32,
   "authorizedAddress": "0x3d89B571fe7D400f42Cb75ecffB76eea1eB96DB5"
 }
