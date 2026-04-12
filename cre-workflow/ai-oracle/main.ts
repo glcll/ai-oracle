@@ -1,9 +1,10 @@
 /**
  * AI Oracle — CRE Workflow
  *
- * HTTP-triggered workflow that queries 3 AI models via OpenRouter,
- * cross-evaluates with a 3-judge scoring matrix, reaches DON consensus
- * on scores via median aggregation, and sends the result to a webhook.
+ * HTTP-triggered workflow that queries 3 worker AI models via OpenRouter,
+ * cross-evaluates with 3 independent judge models in a 3x3 scoring matrix,
+ * reaches DON consensus on scores via median aggregation, and sends
+ * the result to a webhook.
  */
 
 import {
@@ -28,8 +29,10 @@ import { z } from "zod";
 
 const ConfigSchema = z.object({
   openRouterUrl: z.string(),
-  models: z.array(z.string()).length(3),
-  modelNames: z.array(z.string()).length(3),
+  workerModels: z.array(z.string()).length(3),
+  workerModelNames: z.array(z.string()).length(3),
+  judgeModels: z.array(z.string()).length(3),
+  judgeModelNames: z.array(z.string()).length(3),
   webhookUrl: z.string(),
   temperature: z.number(),
   maxTokens: z.number(),
@@ -43,7 +46,6 @@ type Config = z.infer<typeof ConfigSchema>;
 // ---------------------------------------------------------------------------
 
 type OracleNodeResult = {
-  // 3x3 scoring matrix — 9 scores total (3 judges x 3 responses)
   judge_0_score_0: number;
   judge_0_score_1: number;
   judge_0_score_2: number;
@@ -53,11 +55,9 @@ type OracleNodeResult = {
   judge_2_score_0: number;
   judge_2_score_1: number;
   judge_2_score_2: number;
-  // Raw text responses (not consensus-critical)
   response_0: string;
   response_1: string;
   response_2: string;
-  // Self-reported confidence from each model
   confidence_0: number;
   confidence_1: number;
   confidence_2: number;
@@ -124,27 +124,21 @@ function clamp(val: unknown, min: number, max: number, fallback: number): number
 }
 
 // ---------------------------------------------------------------------------
-// Node-level execution: call models + judge (runs on each DON node)
+// Node-level execution: 3 workers generate, 3 judges evaluate
 // ---------------------------------------------------------------------------
 
 function queryModelsAndJudge(
   sendRequester: HTTPSendRequester,
   config: Config,
 ): OracleNodeResult {
-  // We can't access the trigger payload inside HTTPClient.sendRequest's callback,
-  // so the prompt is passed via config at trigger time. See workaround in onHttpTrigger.
-  // For now this is structured to show the pattern; in practice the prompt would be
-  // injected into config or fetched from a shared location.
-
   const extConfig = config as Config & { _prompt?: string; _apiKey?: string };
   const prompt = extConfig._prompt ?? "Hello";
   const apiKey = extConfig._apiKey ?? "";
 
-  // Phase 1: Generation — call all 3 models
+  // Phase 1: Generation — 3 worker models generate answers
   const generationSystemPrompt =
-    'Answer the following question thoughtfully. Respond with valid JSON only: { "answer": "your answer", "confidence": <1-10 integer> }';
+    'Answer the following question thoughtfully and concisely. Respond with valid JSON only: { "answer": "your answer", "confidence": <1-10 integer> }';
 
-  const responses: string[] = [];
   const answers: string[] = [];
   const confidences: number[] = [];
 
@@ -159,7 +153,7 @@ function queryModelsAndJudge(
           "X-Title": "AI Oracle CRE",
         },
         body: toBase64(JSON.stringify({
-          model: config.models[i],
+          model: config.workerModels[i],
           messages: [
             { role: "system", content: generationSystemPrompt },
             { role: "user", content: prompt },
@@ -171,14 +165,12 @@ function queryModelsAndJudge(
       .result();
 
     const raw = JSON.parse(bytesToString(res.body))?.choices?.[0]?.message?.content ?? "";
-    responses.push(raw);
-
     const parsed = parseJsonFromText(raw);
     answers.push((parsed?.answer as string) ?? raw);
     confidences.push(clamp(parsed?.confidence, 1, 10, 5));
   }
 
-  // Phase 2: Cross-evaluation — each model judges all 3 responses
+  // Phase 2: Cross-evaluation — 3 separate judge models score all worker responses
   const scores: number[][] = [[], [], []];
 
   for (let j = 0; j < 3; j++) {
@@ -186,11 +178,11 @@ function queryModelsAndJudge(
       "You are an impartial AI response evaluator. Score each response on accuracy, completeness, and clarity (1-10). Return ONLY valid JSON.";
     const judgeUserPrompt = `Evaluate these 3 responses to: "${prompt}"
 
-[Response 1]: ${answers[0]}
+[Response 1 — ${config.workerModelNames[0]}]: ${answers[0]}
 
-[Response 2]: ${answers[1]}
+[Response 2 — ${config.workerModelNames[1]}]: ${answers[1]}
 
-[Response 3]: ${answers[2]}
+[Response 3 — ${config.workerModelNames[2]}]: ${answers[2]}
 
 Return: { "score_1": <int 1-10>, "score_2": <int 1-10>, "score_3": <int 1-10> }`;
 
@@ -204,7 +196,7 @@ Return: { "score_1": <int 1-10>, "score_2": <int 1-10>, "score_3": <int 1-10> }`
           "X-Title": "AI Oracle CRE",
         },
         body: toBase64(JSON.stringify({
-          model: config.models[j],
+          model: config.judgeModels[j],
           messages: [
             { role: "system", content: judgeSystemPrompt },
             { role: "user", content: judgeUserPrompt },
@@ -276,20 +268,17 @@ function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): string {
 
   runtime.log(`Received prompt: ${prompt} (requestId: ${requestId})`);
 
-  // Fetch secrets in DON mode (all nodes get the same value)
   const openRouterSecret = runtime.getSecret({ id: "OPENROUTER_KEY" }).result();
   const webhookTokenSecret = runtime.getSecret({ id: "WEBHOOK_TOKEN" }).result();
   const apiKey = openRouterSecret.value;
   const webhookSecret = webhookTokenSecret.value;
 
-  // Run the 3-model + 3-judge evaluation on each node with consensus
   const httpClient = new HTTPClient();
   const configWithPrompt = { ...runtime.config, _prompt: prompt, _apiKey: apiKey } as Config;
   const result = httpClient
     .sendRequest(runtime, queryModelsAndJudge, oracleAggregation)(configWithPrompt)
     .result();
 
-  // Compute winner deterministically from consensus scores
   const totals = [
     result.judge_0_score_0 + result.judge_1_score_0 + result.judge_2_score_0,
     result.judge_0_score_1 + result.judge_1_score_1 + result.judge_2_score_1,
@@ -299,10 +288,9 @@ function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): string {
   const winnerIndex = totals.indexOf(maxTotal);
 
   runtime.log(
-    `Consensus scores: [${totals.map((t) => (t / 3).toFixed(2)).join(", ")}]. Winner: model ${winnerIndex}`
+    `Consensus scores: [${totals.map((t) => (t / 3).toFixed(2)).join(", ")}]. Winner: ${runtime.config.workerModelNames[winnerIndex]}`
   );
 
-  // Flatten scores for webhook delivery: [j0s0, j0s1, j0s2, j1s0, ...]
   const flatScores = [
     result.judge_0_score_0, result.judge_0_score_1, result.judge_0_score_2,
     result.judge_1_score_0, result.judge_1_score_1, result.judge_1_score_2,
@@ -318,7 +306,6 @@ function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): string {
     nodeCount: 5,
   });
 
-  // Deliver result to the API webhook
   const webhookUrl = callbackUrl || runtime.config.webhookUrl;
   const webhookHttpClient = new HTTPClient();
 
@@ -344,7 +331,7 @@ function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): string {
     )()
     .result();
 
-  return `Oracle consensus complete. Winner: model ${winnerIndex} (requestId: ${requestId})`;
+  return `Oracle consensus complete. Winner: ${runtime.config.workerModelNames[winnerIndex]} (requestId: ${requestId})`;
 }
 
 // ---------------------------------------------------------------------------

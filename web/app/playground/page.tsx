@@ -42,10 +42,60 @@ export default function Playground() {
         body: JSON.stringify({ prompt: prompt.trim() }),
       });
 
-      if (!res.ok || !res.body) {
+      if (!res.ok) {
         const text = await res.text();
         setPhase("error");
         setError(text || `HTTP ${res.status}`);
+        return;
+      }
+
+      const contentType = res.headers.get("content-type") ?? "";
+
+      if (contentType.includes("application/json")) {
+        // CRE path: JSON response with requestId, poll for result
+        const data = await res.json();
+        if (!data.requestId) {
+          setPhase("error");
+          setError(data.error || "No requestId returned");
+          return;
+        }
+
+        setPhase("querying");
+        const statusUrl = data.statusUrl || `/api/v1/result/${data.requestId}`;
+
+        for (let attempt = 0; attempt < 60; attempt++) {
+          await new Promise((r) => setTimeout(r, 5000));
+          try {
+            const poll = await fetch(statusUrl);
+            if (!poll.ok) continue;
+            const pollData = await poll.json();
+
+            if (pollData.status === "completed") {
+              setPhase("done");
+              setResult(pollData);
+              return;
+            } else if (pollData.status === "failed") {
+              setPhase("error");
+              setError(pollData.error || "Workflow execution failed");
+              return;
+            }
+
+            if (attempt > 5) setPhase("evaluating");
+            if (attempt > 15) setPhase("consensus");
+          } catch {
+            // polling error, retry
+          }
+        }
+
+        setPhase("error");
+        setError("Timed out waiting for CRE result (5 minutes)");
+        return;
+      }
+
+      // Fallback SSE streaming path (local engine)
+      if (!res.body) {
+        setPhase("error");
+        setError("No response body");
         return;
       }
 

@@ -1,8 +1,17 @@
 import { generateRequestId, setResult } from "@/lib/kv";
 import { runOracleConsensusStreaming } from "@/lib/oracle-engine";
+import { triggerCREWorkflow } from "@/lib/cre-trigger";
 import { WORKER_MODELS, JUDGE_MODELS } from "@/lib/types";
 
 export const maxDuration = 60;
+
+function isCREConfigured(): boolean {
+  return !!(
+    process.env.CRE_GATEWAY_URL &&
+    process.env.CRE_WORKFLOW_ID &&
+    process.env.CRE_PRIVATE_KEY
+  );
+}
 
 export async function POST(request: Request) {
   let body: { prompt?: string };
@@ -29,6 +38,44 @@ export async function POST(request: Request) {
 
   const requestId = generateRequestId();
 
+  // Primary path: trigger CRE workflow on the decentralized oracle network.
+  // The workflow runs on DON nodes, reaches consensus, and posts the result
+  // back to /api/v1/webhook. The client polls /api/v1/result/:id.
+  if (isCREConfigured()) {
+    const baseUrl =
+      process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : "https://ai-oracle-council.vercel.app";
+
+    const callbackUrl = `${baseUrl}/api/v1/webhook`;
+
+    await setResult({
+      requestId,
+      status: "pending",
+      prompt,
+    });
+
+    const cre = await triggerCREWorkflow({ prompt, requestId, callbackUrl });
+
+    if (cre.success) {
+      return Response.json({
+        requestId,
+        status: "pending",
+        statusUrl: `/api/v1/result/${requestId}`,
+        executionId: cre.executionId,
+        engine: "cre",
+        workerModels: WORKER_MODELS.map((m) => m.id),
+        judgeModels: JUDGE_MODELS.map((m) => m.id),
+      });
+    }
+
+    // CRE trigger failed — fall through to local engine
+    console.error("CRE trigger failed, falling back to local engine:", cre.error);
+  }
+
+  // Fallback: local streaming engine (runs entirely in this serverless function)
   const stream = new ReadableStream({
     async start(controller) {
       const send = (data: Record<string, unknown>) => {
@@ -42,6 +89,7 @@ export async function POST(request: Request) {
         requestId,
         workerModels: WORKER_MODELS.map((m) => m.id),
         judgeModels: JUDGE_MODELS.map((m) => m.id),
+        engine: "local",
       });
 
       try {
