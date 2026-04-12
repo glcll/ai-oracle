@@ -7,43 +7,31 @@ export interface ModelDef {
 
 export const WORKER_MODELS: ModelDef[] = [
   {
-    id: "qwen3.6-plus",
-    name: "Qwen 3.6 Plus",
-    openRouterId: "qwen/qwen3.6-plus",
-    provider: "Alibaba",
-  },
-  {
-    id: "deepseek-v3.2",
-    name: "DeepSeek V3.2",
-    openRouterId: "deepseek/deepseek-v3.2",
-    provider: "DeepSeek",
-  },
-  {
     id: "gemini-2.5-flash",
     name: "Gemini 2.5 Flash",
     openRouterId: "google/gemini-2.5-flash",
     provider: "Google",
-  },
-];
-
-export const JUDGE_MODELS: ModelDef[] = [
-  {
-    id: "gemini-2.5-pro",
-    name: "Gemini 2.5 Pro",
-    openRouterId: "google/gemini-2.5-pro",
-    provider: "Google",
-  },
-  {
-    id: "minimax-m2.7",
-    name: "MiniMax M2.7",
-    openRouterId: "minimax/minimax-m2.7",
-    provider: "MiniMax",
   },
   {
     id: "gpt-4o-mini",
     name: "GPT-4o Mini",
     openRouterId: "openai/gpt-4o-mini",
     provider: "OpenAI",
+  },
+  {
+    id: "qwen3.6-plus",
+    name: "Qwen 3.6 Plus",
+    openRouterId: "qwen/qwen3.6-plus",
+    provider: "Alibaba",
+  },
+];
+
+export const JUDGE_MODELS: ModelDef[] = [
+  {
+    id: "gemini-2.5-flash",
+    name: "Gemini 2.5 Flash",
+    openRouterId: "google/gemini-2.5-flash",
+    provider: "Google",
   },
 ];
 

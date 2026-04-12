@@ -1,10 +1,12 @@
 /**
- * AI Oracle — CRE Workflow
+ * AI Oracle — CRE Workflow (3 workers + 1 judge)
  *
  * HTTP-triggered workflow that queries 3 worker AI models via OpenRouter,
- * cross-evaluates with 3 independent judge models in a 3x3 scoring matrix,
- * reaches DON consensus on scores via median aggregation, and sends
- * the result to a webhook.
+ * has 1 fast judge model score all 3 responses, reaches DON consensus
+ * on scores via median aggregation, and sends the result to a webhook.
+ *
+ * Total HTTP calls per execution: 5 (3 workers + 1 judge + 1 webhook)
+ * Well within the CRE HTTPAction.CallLimit of 10.
  */
 
 import {
@@ -17,7 +19,6 @@ import {
   median,
   ignore,
   type Runtime,
-  type NodeRuntime,
   type HTTPPayload,
   type HTTPSendRequester,
 } from "@chainlink/cre-sdk";
@@ -31,8 +32,8 @@ const ConfigSchema = z.object({
   openRouterUrl: z.string(),
   workerModels: z.array(z.string()).length(3),
   workerModelNames: z.array(z.string()).length(3),
-  judgeModels: z.array(z.string()).length(3),
-  judgeModelNames: z.array(z.string()).length(3),
+  judgeModel: z.string(),
+  judgeModelName: z.string(),
   webhookUrl: z.string(),
   temperature: z.number(),
   workerMaxTokens: z.number(),
@@ -47,15 +48,9 @@ type Config = z.infer<typeof ConfigSchema>;
 // ---------------------------------------------------------------------------
 
 type OracleNodeResult = {
-  judge_0_score_0: number;
-  judge_0_score_1: number;
-  judge_0_score_2: number;
-  judge_1_score_0: number;
-  judge_1_score_1: number;
-  judge_1_score_2: number;
-  judge_2_score_0: number;
-  judge_2_score_1: number;
-  judge_2_score_2: number;
+  score_0: number;
+  score_1: number;
+  score_2: number;
   response_0: string;
   response_1: string;
   response_2: string;
@@ -88,7 +83,7 @@ function toBase64(str: string): string {
 function stringToBytes(str: string): number[] {
   const bytes: number[] = [];
   for (let i = 0; i < str.length; i++) {
-    let c = str.charCodeAt(i);
+    const c = str.charCodeAt(i);
     if (c < 0x80) {
       bytes.push(c);
     } else if (c < 0x800) {
@@ -125,7 +120,7 @@ function clamp(val: unknown, min: number, max: number, fallback: number): number
 }
 
 // ---------------------------------------------------------------------------
-// Node-level execution: 3 workers generate, 3 judges evaluate
+// Node-level execution: 3 workers generate, 1 judge evaluates
 // ---------------------------------------------------------------------------
 
 function queryModelsAndJudge(
@@ -136,9 +131,8 @@ function queryModelsAndJudge(
   const prompt = extConfig._prompt ?? "Hello";
   const apiKey = extConfig._apiKey ?? "";
 
-  // Phase 1: Generation — 3 worker models generate answers
   const generationSystemPrompt =
-    'Answer the following question thoughtfully and concisely. Respond with valid JSON only: { "answer": "your answer", "confidence": <1-10 integer> }';
+    'Answer concisely in valid JSON only: { "answer": "your answer", "confidence": <1-10> }';
 
   const answers: string[] = [];
   const confidences: number[] = [];
@@ -171,63 +165,41 @@ function queryModelsAndJudge(
     confidences.push(clamp(parsed?.confidence, 1, 10, 5));
   }
 
-  // Phase 2: Cross-evaluation — 3 separate judge models score all worker responses
-  const scores: number[][] = [[], [], []];
+  // Single judge scores all 3 responses
+  const judgeUserPrompt = `Score these 3 AI answers to "${prompt}" on accuracy/clarity (1-10).
+[1]: ${answers[0]}
+[2]: ${answers[1]}
+[3]: ${answers[2]}
+Return ONLY: { "score_1": <int>, "score_2": <int>, "score_3": <int> }`;
 
-  for (let j = 0; j < 3; j++) {
-    const judgeSystemPrompt =
-      "You are an impartial AI response evaluator. Score each response on accuracy, completeness, and clarity (1-10). Return ONLY valid JSON.";
-    const judgeUserPrompt = `Evaluate these 3 responses to: "${prompt}"
+  const judgeRes = sendRequester
+    .sendRequest({
+      url: config.openRouterUrl,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+        "X-Title": "AI Oracle CRE",
+      },
+      body: toBase64(JSON.stringify({
+        model: config.judgeModel,
+        messages: [
+          { role: "system", content: "Score AI responses 1-10. Return only JSON." },
+          { role: "user", content: judgeUserPrompt },
+        ],
+        temperature: 0.1,
+        max_tokens: config.judgeMaxTokens,
+      })),
+    })
+    .result();
 
-[Response 1 — ${config.workerModelNames[0]}]: ${answers[0]}
-
-[Response 2 — ${config.workerModelNames[1]}]: ${answers[1]}
-
-[Response 3 — ${config.workerModelNames[2]}]: ${answers[2]}
-
-Return: { "score_1": <int 1-10>, "score_2": <int 1-10>, "score_3": <int 1-10> }`;
-
-    const judgeRes = sendRequester
-      .sendRequest({
-        url: config.openRouterUrl,
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-          "X-Title": "AI Oracle CRE",
-        },
-        body: toBase64(JSON.stringify({
-          model: config.judgeModels[j],
-          messages: [
-            { role: "system", content: judgeSystemPrompt },
-            { role: "user", content: judgeUserPrompt },
-          ],
-          temperature: 0.1,
-          max_tokens: config.judgeMaxTokens,
-        })),
-      })
-      .result();
-
-    const judgeRaw = JSON.parse(bytesToString(judgeRes.body))?.choices?.[0]?.message?.content ?? "";
-    const parsed = parseJsonFromText(judgeRaw);
-
-    scores[j] = [
-      clamp(parsed?.score_1, 1, 10, 5),
-      clamp(parsed?.score_2, 1, 10, 5),
-      clamp(parsed?.score_3, 1, 10, 5),
-    ];
-  }
+  const judgeRaw = JSON.parse(bytesToString(judgeRes.body))?.choices?.[0]?.message?.content ?? "";
+  const parsed = parseJsonFromText(judgeRaw);
 
   return {
-    judge_0_score_0: scores[0][0],
-    judge_0_score_1: scores[0][1],
-    judge_0_score_2: scores[0][2],
-    judge_1_score_0: scores[1][0],
-    judge_1_score_1: scores[1][1],
-    judge_1_score_2: scores[1][2],
-    judge_2_score_0: scores[2][0],
-    judge_2_score_1: scores[2][1],
-    judge_2_score_2: scores[2][2],
+    score_0: clamp(parsed?.score_1, 1, 10, 5),
+    score_1: clamp(parsed?.score_2, 1, 10, 5),
+    score_2: clamp(parsed?.score_3, 1, 10, 5),
     response_0: answers[0],
     response_1: answers[1],
     response_2: answers[2],
@@ -242,15 +214,9 @@ Return: { "score_1": <int 1-10>, "score_2": <int 1-10>, "score_3": <int 1-10> }`
 // ---------------------------------------------------------------------------
 
 const oracleAggregation = ConsensusAggregationByFields<OracleNodeResult>({
-  judge_0_score_0: median,
-  judge_0_score_1: median,
-  judge_0_score_2: median,
-  judge_1_score_0: median,
-  judge_1_score_1: median,
-  judge_1_score_2: median,
-  judge_2_score_0: median,
-  judge_2_score_1: median,
-  judge_2_score_2: median,
+  score_0: median,
+  score_1: median,
+  score_2: median,
   response_0: ignore,
   response_1: ignore,
   response_2: ignore,
@@ -280,30 +246,22 @@ function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): string {
     .sendRequest(runtime, queryModelsAndJudge, oracleAggregation)(configWithPrompt)
     .result();
 
-  const totals = [
-    result.judge_0_score_0 + result.judge_1_score_0 + result.judge_2_score_0,
-    result.judge_0_score_1 + result.judge_1_score_1 + result.judge_2_score_1,
-    result.judge_0_score_2 + result.judge_1_score_2 + result.judge_2_score_2,
-  ];
-  const maxTotal = Math.max(...totals);
-  const winnerIndex = totals.indexOf(maxTotal);
+  const totals = [result.score_0, result.score_1, result.score_2];
+  const maxScore = Math.max(...totals);
+  const winnerIndex = totals.indexOf(maxScore);
 
   runtime.log(
-    `Consensus scores: [${totals.map((t) => (t / 3).toFixed(2)).join(", ")}]. Winner: ${runtime.config.workerModelNames[winnerIndex]}`
+    `Consensus scores: [${totals.join(", ")}]. Winner: ${runtime.config.workerModelNames[winnerIndex]}`
   );
-
-  const flatScores = [
-    result.judge_0_score_0, result.judge_0_score_1, result.judge_0_score_2,
-    result.judge_1_score_0, result.judge_1_score_1, result.judge_1_score_2,
-    result.judge_2_score_0, result.judge_2_score_1, result.judge_2_score_2,
-  ];
 
   const webhookPayload = JSON.stringify({
     requestId,
     prompt,
-    scores: flatScores,
+    scores: totals,
     responses: [result.response_0, result.response_1, result.response_2],
     confidences: [result.confidence_0, result.confidence_1, result.confidence_2],
+    winnerIndex,
+    judgeModel: runtime.config.judgeModelName,
     nodeCount: 5,
   });
 

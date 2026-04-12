@@ -1,17 +1,13 @@
 {
   "openRouterUrl": "https://openrouter.ai/api/v1/chat/completions",
   "workerModels": [
-    "qwen/qwen3.6-plus",
-    "deepseek/deepseek-v3.2",
-    "google/gemini-2.5-flash"
+    "google/gemini-2.5-flash",
+    "openai/gpt-4o-mini",
+    "qwen/qwen3.6-plus"
   ],
-  "workerModelNames": ["qwen3.6-plus", "deepseek-v3.2", "gemini-2.5-flash"],
-  "judgeModels": [
-    "google/gemini-2.5-pro",
-    "minimax/minimax-m2.7",
-    "openai/gpt-4o-mini"
-  ],
-  "judgeModelNames": ["gemini-2.5-pro", "minimax-m2.7", "gpt-4o-mini"],
+  "workerModelNames": ["gemini-2.5-flash", "gpt-4o-mini", "qwen3.6-plus"],
+  "judgeModel": "google/gemini-2.5-flash",
+  "judgeModelName": "gemini-2.5-flash",
   "webhookUrl": "https://ai-oracle-council.vercel.app/api/v1/webhook",
   "temperature": 0.1,
   "workerMaxTokens": 256,

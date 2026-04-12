@@ -15,7 +15,7 @@ export async function GET() {
       provider: m.provider,
       openRouterId: m.openRouterId,
     })),
-    judgingMethod: "3x3 cross-evaluation matrix (3 independent judges score 3 worker responses)",
+    judgingMethod: "Single fast judge (Gemini 2.5 Flash) scores all 3 worker responses 1-10",
     consensusMethod: "median-aggregation across DON nodes",
   });
 }

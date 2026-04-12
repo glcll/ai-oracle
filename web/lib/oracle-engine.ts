@@ -9,7 +9,7 @@ async function callModel(
   systemPrompt: string,
   userPrompt: string,
   apiKey: string,
-  maxTokens = 512
+  maxTokens = 256
 ): Promise<string> {
   const res = await fetch(OPENROUTER_URL, {
     method: "POST",
@@ -65,6 +65,7 @@ export async function runOracleConsensusStreaming(
   }
 
   const submittedAt = new Date().toISOString();
+  const judge = JUDGE_MODELS[0];
 
   try {
     // Phase 1: 3 worker models generate answers in parallel
@@ -75,8 +76,7 @@ export async function runOracleConsensusStreaming(
     });
 
     const generationPrompt =
-      "Answer the following question thoughtfully and concisely. " +
-      'Respond ONLY with valid JSON: { "answer": "your answer here", "confidence": <integer 1-10> }';
+      'Answer concisely in valid JSON only: { "answer": "your answer", "confidence": <1-10> }';
 
     const rawResponses = await Promise.all(
       WORKER_MODELS.map(async (m, i) => {
@@ -96,76 +96,57 @@ export async function runOracleConsensusStreaming(
       };
     });
 
-    // Phase 2: 3 separate judge models score the worker responses
+    // Phase 2: 1 judge model scores all 3 worker responses
     send({
       type: "phase",
       phase: "judging",
-      message: `${JUDGE_MODELS.map((m) => m.name).join(", ")} evaluating responses...`,
+      message: `${judge.name} evaluating responses...`,
     });
 
     const answers = responses.map((r) => r.answer);
     const judgePromptText =
-      `Score these 3 AI responses to the question: "${prompt}"\n\n` +
-      `Evaluate each on accuracy, completeness, and clarity using a 1-10 integer scale.\n\n` +
-      `[Response 1 — ${WORKER_MODELS[0].name}]: ${answers[0]}\n\n` +
-      `[Response 2 — ${WORKER_MODELS[1].name}]: ${answers[1]}\n\n` +
-      `[Response 3 — ${WORKER_MODELS[2].name}]: ${answers[2]}\n\n` +
-      `Return ONLY valid JSON: { "score_1": <int>, "score_2": <int>, "score_3": <int> }`;
+      `Score these 3 AI answers to "${prompt}" on accuracy/clarity (1-10).\n` +
+      `[1 — ${WORKER_MODELS[0].name}]: ${answers[0]}\n` +
+      `[2 — ${WORKER_MODELS[1].name}]: ${answers[1]}\n` +
+      `[3 — ${WORKER_MODELS[2].name}]: ${answers[2]}\n` +
+      `Return ONLY: { "score_1": <int>, "score_2": <int>, "score_3": <int> }`;
 
-    const judgeResults = await Promise.all(
-      JUDGE_MODELS.map(async (m, i) => {
-        const result = await callModel(
-          m.openRouterId,
-          "You are an impartial AI response evaluator. Score responses 1-10. Return only JSON.",
-          judgePromptText,
-          apiKey,
-          64
-        );
-        send({ type: "model_done", phase: "judging", model: m.id, index: i });
-        return result;
-      })
+    const judgeResult = await callModel(
+      judge.openRouterId,
+      "Score AI responses 1-10. Return only JSON.",
+      judgePromptText,
+      apiKey,
+      64
     );
+    send({ type: "model_done", phase: "judging", model: judge.id, index: 0 });
 
-    // Phase 3: Build score matrix and compute winner
+    // Phase 3: Compute winner
     send({ type: "phase", phase: "consensus", message: "Computing consensus..." });
 
+    const parsed = parseJsonResponse(judgeResult);
+    const scores = [
+      clampScore(parsed?.score_1),
+      clampScore(parsed?.score_2),
+      clampScore(parsed?.score_3),
+    ];
+
     const scoreMatrix: ScoreMatrix = {};
-    const totals = [0, 0, 0];
-    let judgeCount = 0;
-
-    for (let j = 0; j < 3; j++) {
-      const parsed = parseJsonResponse(judgeResults[j]);
-      const s1 = clampScore(parsed?.score_1);
-      const s2 = clampScore(parsed?.score_2);
-      const s3 = clampScore(parsed?.score_3);
-
-      totals[0] += s1;
-      totals[1] += s2;
-      totals[2] += s3;
-      judgeCount++;
-
-      for (let r = 0; r < 3; r++) {
-        const respondentId = WORKER_MODELS[r].id;
-        if (!scoreMatrix[respondentId]) {
-          scoreMatrix[respondentId] = { judgedBy: {} };
-        }
-        scoreMatrix[respondentId].judgedBy[JUDGE_MODELS[j].id] = [s1, s2, s3][r];
-      }
-    }
-
     const avgScores: { [model: string]: number } = {};
+
     for (let r = 0; r < 3; r++) {
-      avgScores[WORKER_MODELS[r].id] = Math.round((totals[r] / judgeCount) * 100) / 100;
+      const workerId = WORKER_MODELS[r].id;
+      scoreMatrix[workerId] = { judgedBy: { [judge.id]: scores[r] } };
+      avgScores[workerId] = scores[r];
     }
 
-    const winningIndex = totals.indexOf(Math.max(...totals));
+    const winningIndex = scores.indexOf(Math.max(...scores));
     const completedAt = new Date().toISOString();
 
-    const allResponses: ModelResponse[] = responses.map((r) => ({
+    const allResponses: ModelResponse[] = responses.map((r, i) => ({
       model: r.model,
       answer: r.answer,
       confidence: r.confidence,
-      avgScore: avgScores[r.model],
+      avgScore: scores[i],
     }));
 
     return {

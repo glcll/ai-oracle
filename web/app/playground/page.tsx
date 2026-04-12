@@ -13,8 +13,8 @@ const MODEL_NAMES: Record<string, string> = Object.fromEntries(
 const PHASE_LABELS: Record<Phase, string> = {
   idle: "",
   submitting: "Connecting to oracle network...",
-  querying: "Querying 3 AI models via OpenRouter...",
-  evaluating: "Each model judging all 3 responses (3x3 matrix)...",
+  querying: "Querying 3 worker models via OpenRouter...",
+  evaluating: `${JUDGE_MODELS[0]?.name || "Judge"} evaluating all 3 responses...`,
   consensus: "Computing consensus scores...",
   done: "Consensus reached!",
   error: "Something went wrong",
@@ -248,7 +248,7 @@ export default function Playground() {
               {result.consensus?.scoreMatrix && (
                 <div className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card p-[var(--space-6x)]">
                   <h3 className="font-display text-base font-bold mb-[var(--space-4x)] text-foreground">
-                    3x3 Scoring Matrix
+                    Scoring Matrix
                   </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm font-mono">
