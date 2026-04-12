@@ -38,50 +38,31 @@ export async function POST(request: Request) {
 
   const requestId = generateRequestId();
 
-  // Primary path: trigger CRE workflow on the decentralized oracle network.
-  // The workflow runs on DON nodes, reaches consensus, and posts the result
-  // back to /api/v1/webhook. The client polls /api/v1/result/:id.
+  // Fire CRE workflow in the background for on-chain attestation.
+  // CRE consensus validates scores but drops response text (ignore aggregation),
+  // so the local engine is used as the primary user-facing path.
   if (isCREConfigured()) {
-    try {
-      const baseUrl =
-        process.env.VERCEL_PROJECT_PRODUCTION_URL
-          ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-          : process.env.VERCEL_URL
-            ? `https://${process.env.VERCEL_URL}`
-            : "https://ai-oracle-council.vercel.app";
+    const baseUrl =
+      process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : "https://ai-oracle-council.vercel.app";
 
-      const callbackUrl = `${baseUrl}/api/v1/webhook`;
+    const callbackUrl = `${baseUrl}/api/v1/webhook`;
 
-      await setResult({
-        requestId,
-        status: "pending",
-        prompt,
-      });
-
-      const cre = await triggerCREWorkflow({ prompt, requestId, callbackUrl });
-
+    triggerCREWorkflow({ prompt, requestId, callbackUrl }).then((cre) => {
       if (cre.success) {
-        return Response.json({
-          requestId,
-          status: "pending",
-          statusUrl: `/api/v1/result/${requestId}`,
-          executionId: cre.executionId,
-          engine: "cre",
-          workerModels: WORKER_MODELS.map((m) => m.id),
-          judgeModels: JUDGE_MODELS.map((m) => m.id),
-        });
+        console.log(`CRE triggered: executionId=${cre.executionId}`);
+      } else {
+        console.error(`CRE trigger failed: ${cre.error}`);
       }
-
-      const creErr = cre.error ?? "unknown";
-      console.error(`CRE trigger failed: ${creErr}`);
-      // Temporarily return CRE error for debugging; will fall through to local engine after
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`CRE trigger threw: ${msg}`);
-    }
+    }).catch((err) => {
+      console.error(`CRE trigger threw: ${err instanceof Error ? err.message : err}`);
+    });
   }
 
-  // Fallback: local streaming engine (runs entirely in this serverless function)
+  // Primary path: local streaming engine with full response text
   const stream = new ReadableStream({
     async start(controller) {
       const send = (data: Record<string, unknown>) => {
