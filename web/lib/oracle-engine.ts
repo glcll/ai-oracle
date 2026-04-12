@@ -24,7 +24,7 @@ async function callModel(
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      temperature: 0.3,
+      temperature: 0.1,
       max_tokens: maxTokens,
     }),
   });
@@ -80,7 +80,7 @@ export async function runOracleConsensusStreaming(
 
     const rawResponses = await Promise.all(
       WORKER_MODELS.map(async (m, i) => {
-        const result = await callModel(m.openRouterId, generationPrompt, prompt, apiKey, 512);
+        const result = await callModel(m.openRouterId, generationPrompt, prompt, apiKey, 256);
         send({ type: "model_done", phase: "generation", model: m.id, index: i });
         return result;
       })
@@ -119,7 +119,7 @@ export async function runOracleConsensusStreaming(
           "You are an impartial AI response evaluator. Score responses 1-10. Return only JSON.",
           judgePromptText,
           apiKey,
-          128
+          64
         );
         send({ type: "model_done", phase: "judging", model: m.id, index: i });
         return result;

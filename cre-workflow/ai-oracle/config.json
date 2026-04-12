@@ -13,6 +13,7 @@
   ],
   "judgeModelNames": ["gemini-2.5-pro", "minimax-m2.7", "gpt-4o-mini"],
   "webhookUrl": "http://localhost:3000/api/v1/webhook",
-  "temperature": 0.3,
-  "maxTokens": 1024
+  "temperature": 0.1,
+  "workerMaxTokens": 256,
+  "judgeMaxTokens": 64
 }

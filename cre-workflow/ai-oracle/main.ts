@@ -35,7 +35,8 @@ const ConfigSchema = z.object({
   judgeModelNames: z.array(z.string()).length(3),
   webhookUrl: z.string(),
   temperature: z.number(),
-  maxTokens: z.number(),
+  workerMaxTokens: z.number(),
+  judgeMaxTokens: z.number(),
   authorizedAddress: z.string().optional(),
 });
 
@@ -159,7 +160,7 @@ function queryModelsAndJudge(
             { role: "user", content: prompt },
           ],
           temperature: config.temperature,
-          max_tokens: config.maxTokens,
+          max_tokens: config.workerMaxTokens,
         })),
       })
       .result();
@@ -202,7 +203,7 @@ Return: { "score_1": <int 1-10>, "score_2": <int 1-10>, "score_3": <int 1-10> }`
             { role: "user", content: judgeUserPrompt },
           ],
           temperature: 0.1,
-          max_tokens: 256,
+          max_tokens: config.judgeMaxTokens,
         })),
       })
       .result();
