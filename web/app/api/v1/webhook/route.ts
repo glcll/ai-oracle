@@ -6,7 +6,7 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 async function fetchAnswer(modelId: string, prompt: string): Promise<string> {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) return "(no API key configured)";
+  if (!apiKey) return "";
 
   try {
     const res = await fetch(OPENROUTER_URL, {
@@ -25,11 +25,11 @@ async function fetchAnswer(modelId: string, prompt: string): Promise<string> {
         max_tokens: 256,
       }),
     });
-    if (!res.ok) return "(failed to fetch answer)";
+    if (!res.ok) return "";
     const data = await res.json();
     return data.choices?.[0]?.message?.content ?? "";
   } catch {
-    return "(error fetching answer)";
+    return "";
   }
 }
 
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     responses: string[];
     confidences: number[];
     winnerIndex?: number;
-    judgeModel?: string;
+    judgeModels?: string[];
     nodeCount?: number;
   };
 
@@ -62,6 +62,7 @@ export async function POST(request: Request) {
 
   const { requestId, prompt, scores, responses, confidences, nodeCount } = body;
   const workerCount = responses?.length ?? 0;
+  const judgeCount = JUDGE_MODELS.length;
 
   if (!requestId || !scores || !responses || workerCount < 2) {
     return NextResponse.json({ error: "Invalid report format" }, { status: 400 });
@@ -70,48 +71,54 @@ export async function POST(request: Request) {
   const scoreMatrix: ScoreMatrix = {};
   const avgScores: { [model: string]: number } = {};
 
-  if (scores.length === workerCount) {
-    const judgeName = body.judgeModel || JUDGE_MODELS[0]?.id || "judge";
-    for (let r = 0; r < workerCount; r++) {
-      const workerId = WORKER_MODELS[r]?.id || `worker-${r}`;
-      scoreMatrix[workerId] = { judgedBy: { [judgeName]: scores[r] } };
-      avgScores[workerId] = scores[r];
-    }
-  } else if (scores.length === 9) {
-    const totals = [0, 0, 0];
-    for (let j = 0; j < 3; j++) {
-      for (let r = 0; r < 3; r++) {
-        const score = scores[j * 3 + r];
-        const respondentId = WORKER_MODELS[r]?.id || `worker-${r}`;
-        const judgeId = JUDGE_MODELS[j]?.id || `judge-${j}`;
-        if (!scoreMatrix[respondentId]) {
-          scoreMatrix[respondentId] = { judgedBy: {} };
-        }
-        scoreMatrix[respondentId].judgedBy[judgeId] = score;
-        totals[r] += score;
+  if (scores.length === workerCount * judgeCount) {
+    // 2W+2J format: scores = [j0_w0, j0_w1, j1_w0, j1_w1]
+    for (let w = 0; w < workerCount; w++) {
+      const workerId = WORKER_MODELS[w]?.id || `worker-${w}`;
+      scoreMatrix[workerId] = { judgedBy: {} };
+      let total = 0;
+      for (let j = 0; j < judgeCount; j++) {
+        const score = scores[j * workerCount + w];
+        const judgeId = (body.judgeModels?.[j]) || JUDGE_MODELS[j]?.id || `judge-${j}`;
+        scoreMatrix[workerId].judgedBy[judgeId] = score;
+        total += score;
       }
+      avgScores[workerId] = Math.round((total / judgeCount) * 100) / 100;
     }
-    for (let r = 0; r < 3; r++) {
-      avgScores[WORKER_MODELS[r]?.id || `worker-${r}`] = Math.round((totals[r] / 3) * 100) / 100;
+  } else if (scores.length === workerCount) {
+    // Single judge format: scores = [w0_score, w1_score]
+    const judgeName = JUDGE_MODELS[0]?.id || "judge";
+    for (let w = 0; w < workerCount; w++) {
+      const workerId = WORKER_MODELS[w]?.id || `worker-${w}`;
+      scoreMatrix[workerId] = { judgedBy: { [judgeName]: scores[w] } };
+      avgScores[workerId] = scores[w];
     }
   } else {
-    return NextResponse.json({ error: `scores length ${scores.length} does not match worker count ${workerCount}` }, { status: 400 });
+    return NextResponse.json({ error: `unexpected scores length ${scores.length}` }, { status: 400 });
   }
 
-  const winningIndex = body.winnerIndex ?? scores.indexOf(Math.max(...scores.slice(0, workerCount)));
+  let winningIndex = 0;
+  let bestAvg = -1;
+  for (let w = 0; w < workerCount; w++) {
+    const wId = WORKER_MODELS[w]?.id || `worker-${w}`;
+    if (avgScores[wId] > bestAvg) {
+      bestAvg = avgScores[wId];
+      winningIndex = w;
+    }
+  }
+  if (body.winnerIndex !== undefined) winningIndex = body.winnerIndex;
+
   const winningModel = WORKER_MODELS[winningIndex];
 
   const hasResponses = responses.some((r) => r && r.trim().length > 0);
   let finalResponses = responses;
 
-  if (!hasResponses && prompt && winningModel) {
-    const answer = await fetchAnswer(winningModel.openRouterId, prompt);
-    finalResponses = responses.map((r, i) =>
-      i === winningIndex ? answer : r || ""
+  if (!hasResponses && prompt) {
+    const fetched = await Promise.all(
+      WORKER_MODELS.slice(0, workerCount).map((m) => fetchAnswer(m.openRouterId, prompt))
     );
+    finalResponses = fetched;
   }
-
-  const winningResponse = finalResponses[winningIndex] || "";
 
   const allResponses: ModelResponse[] = finalResponses.map((resp, i) => ({
     model: WORKER_MODELS[i]?.id || `worker-${i}`,
@@ -124,14 +131,14 @@ export async function POST(request: Request) {
     requestId,
     status: "completed",
     prompt,
-    response: winningResponse,
+    response: finalResponses[winningIndex] || "",
     consensus: {
       winningModel: winningModel?.id || `worker-${winningIndex}`,
       winningIndex,
       averageScores: avgScores,
       scoreMatrix,
       nodeCount: nodeCount ?? 5,
-      consensusMethod: "median-aggregation-2w1j",
+      consensusMethod: "median-aggregation-2w2j",
     },
     allResponses,
     timing: {

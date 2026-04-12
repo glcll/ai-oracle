@@ -48,8 +48,8 @@ function Hero() {
       </h1>
 
       <p className="mt-[var(--space-6x)] text-lg max-w-2xl leading-relaxed text-muted-foreground">
-        Send a prompt to the Chainlink oracle network. 2 ultra-fast worker models respond,
-        1 judge scores both, and DON nodes reach consensus on the best answer. One API call.
+        Send a prompt to the Chainlink oracle network. 2 worker models respond,
+        2 independent judges score both, and DON nodes reach consensus on the best answer. One API call.
       </p>
 
       <div className="flex gap-[var(--space-4x)] mt-[var(--space-10x)]">
@@ -103,7 +103,7 @@ function HowItWorks() {
     {
       step: "2",
       title: "Evaluate",
-      description: "2 ultra-fast worker models (GLM-5 Turbo, Gemini 2.5 Flash) respond independently. Then a judge model (GPT-4o Mini) scores both responses on a 1-10 scale.",
+      description: "2 worker models (Gemini 2.5 Flash, GLM-5 Turbo) respond independently. Then 2 judges (GPT-4o Mini, Qwen Turbo) each score both responses on a 1-10 scale.",
       bg: "bg-warning",
       border: "border-warning-border",
       fg: "text-warning-foreground",
@@ -152,16 +152,16 @@ function HowItWorks() {
             Scoring Matrix
           </h3>
           <p className="text-sm mb-[var(--space-4x)] text-muted-foreground">
-            2 worker models generate responses, then 1 judge model scores each response.
-            The highest score wins. DON nodes run this independently and reach median-aggregated consensus.
+            2 worker models generate responses, then 2 independent judges score each response.
+            The highest average score wins. DON nodes run this independently and reach median-aggregated consensus.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm font-mono">
               <thead>
                 <tr className="text-muted-foreground">
                   <th className="text-left py-[var(--space-2x)] pr-[var(--space-4x)]"></th>
+                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">Gemini Flash</th>
                   <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">GLM-5 Turbo</th>
-                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">Gemini 2.5 Flash</th>
                 </tr>
               </thead>
               <tbody className="text-foreground">
@@ -171,6 +171,18 @@ function HowItWorks() {
                   </td>
                   <td className="text-center py-[var(--space-2x)] px-[var(--space-3x)] text-success-foreground font-bold">8</td>
                   <td className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">7</td>
+                </tr>
+                <tr className="border-t border-border-muted">
+                  <td className="py-[var(--space-2x)] pr-[var(--space-4x)] text-left text-muted-foreground">
+                    Qwen Turbo
+                  </td>
+                  <td className="text-center py-[var(--space-2x)] px-[var(--space-3x)] text-success-foreground font-bold">9</td>
+                  <td className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">7</td>
+                </tr>
+                <tr className="border-t border-border font-bold">
+                  <td className="py-[var(--space-2x)] pr-[var(--space-4x)] text-muted-foreground">Average</td>
+                  <td className="text-center py-[var(--space-2x)] px-[var(--space-3x)] text-success-foreground">8.5</td>
+                  <td className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">7.0</td>
                 </tr>
               </tbody>
             </table>
@@ -260,8 +272,8 @@ function WhyCRE() {
   const cre = [
     { label: "Decentralized oracle network", desc: "Runs across independent DON nodes. No single operator can censor or tamper with results." },
     { label: "Cryptographic attestation", desc: "Every response is signed by the nodes that produced it. Verifiable on-chain." },
-    { label: "Multi-model by design", desc: "Multiple models respond independently. You see every answer, not just the one someone picked for you." },
-    { label: "BFT consensus on quality", desc: "An independent judge scores each response, and DON nodes reach median-aggregated consensus — outliers and hallucinations get filtered." },
+    { label: "Multi-model by design", desc: "2 workers respond, 2 judges score independently. You see every answer, not just the one someone picked for you." },
+    { label: "BFT consensus on quality", desc: "Two independent judges score each response, and DON nodes reach median-aggregated consensus — outliers and hallucinations get filtered." },
     { label: "Immutable results", desc: "Consensus output can be anchored on-chain. The record can't be changed after the fact." },
   ];
 
@@ -346,11 +358,12 @@ function WhyCRE() {
 
 function Models() {
   const workers = [
-    { name: "GLM-5 Turbo", provider: "Zhipu AI", role: "Worker" },
     { name: "Gemini 2.5 Flash", provider: "Google", role: "Worker" },
+    { name: "GLM-5 Turbo", provider: "Zhipu AI", role: "Worker" },
   ];
   const judges = [
     { name: "GPT-4o Mini", provider: "OpenAI", role: "Judge" },
+    { name: "Qwen Turbo", provider: "Alibaba", role: "Judge" },
   ];
 
   return (
@@ -360,11 +373,11 @@ function Models() {
           The Oracle Council
         </h2>
         <p className="text-center text-base mb-[var(--space-12x)] max-w-2xl mx-auto text-muted-foreground">
-          Three models, two roles. Workers generate answers independently.
-          A judge scores both responses. DON nodes reach consensus.
+          Four models, two roles. Workers generate answers independently.
+          Two judges score both responses. DON nodes reach consensus.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-[var(--space-6x)]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-[var(--space-6x)]">
           {workers.map((m) => (
             <div
               key={`worker-${m.name}`}

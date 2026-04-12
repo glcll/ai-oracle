@@ -1,12 +1,15 @@
 {
   "openRouterUrl": "https://openrouter.ai/api/v1/chat/completions",
   "workerModels": [
-    "z-ai/glm-5-turbo",
-    "google/gemini-2.5-flash"
+    "google/gemini-2.5-flash",
+    "z-ai/glm-5-turbo"
   ],
-  "workerModelNames": ["glm-5-turbo", "gemini-2.5-flash"],
-  "judgeModel": "openai/gpt-4o-mini",
-  "judgeModelName": "gpt-4o-mini",
+  "workerModelNames": ["gemini-2.5-flash", "glm-5-turbo"],
+  "judgeModels": [
+    "openai/gpt-4o-mini",
+    "qwen/qwen-turbo"
+  ],
+  "judgeModelNames": ["gpt-4o-mini", "qwen-turbo"],
   "webhookUrl": "http://localhost:3000/api/v1/webhook",
   "temperature": 0.1,
   "workerMaxTokens": 128,

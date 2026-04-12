@@ -14,7 +14,7 @@ const PHASE_LABELS: Record<Phase, string> = {
   idle: "",
   submitting: "Connecting to oracle network...",
   querying: "Querying 2 worker models via OpenRouter...",
-  evaluating: `${JUDGE_MODELS[0]?.name || "Judge"} evaluating both responses...`,
+  evaluating: `${JUDGE_MODELS.map((j) => j.name).join(" & ")} evaluating both responses...`,
   consensus: "Computing consensus scores...",
   done: "Consensus reached!",
   error: "Something went wrong",
@@ -179,7 +179,7 @@ export default function Playground() {
             Ask the Oracle Council
           </h1>
           <p className="text-sm mb-[var(--space-8x)] text-muted-foreground">
-            Your prompt will be answered by 2 ultra-fast worker models, scored by 1 judge, and resolved via decentralized consensus.
+            Your prompt will be answered by 2 worker models, scored by 2 independent judges, and resolved via decentralized consensus.
           </p>
 
           {/* Input */}

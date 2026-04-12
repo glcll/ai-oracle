@@ -1,11 +1,8 @@
 /**
- * AI Oracle — CRE Workflow (2 workers + 1 judge)
+ * AI Oracle — CRE Workflow (2 workers + 2 judges)
  *
  * Optimized for CRE's 10s per-request HTTP timeout.
- * Uses only the fastest models (GPT-4o Mini, Gemini Flash) with
- * minimal token limits and ultra-short prompts.
- *
- * HTTP calls: 2 workers + 1 judge + 1 webhook = 4 total (limit: 10)
+ * HTTP calls: 2 workers + 2 judges + 1 webhook = 5 total (limit: 10)
  */
 
 import {
@@ -27,8 +24,8 @@ const ConfigSchema = z.object({
   openRouterUrl: z.string(),
   workerModels: z.array(z.string()).length(2),
   workerModelNames: z.array(z.string()).length(2),
-  judgeModel: z.string(),
-  judgeModelName: z.string(),
+  judgeModels: z.array(z.string()).length(2),
+  judgeModelNames: z.array(z.string()).length(2),
   webhookUrl: z.string(),
   temperature: z.number(),
   workerMaxTokens: z.number(),
@@ -39,8 +36,12 @@ const ConfigSchema = z.object({
 type Config = z.infer<typeof ConfigSchema>;
 
 type OracleNodeResult = {
-  score_0: number;
-  score_1: number;
+  // judge 0 scores for worker 0 and 1
+  score_j0_w0: number;
+  score_j0_w1: number;
+  // judge 1 scores for worker 0 and 1
+  score_j1_w0: number;
+  score_j1_w1: number;
   response_0: string;
   response_1: string;
   confidence_0: number;
@@ -97,7 +98,7 @@ function clamp(val: unknown, fallback: number): number {
 }
 
 // ---------------------------------------------------------------------------
-// Node execution: 2 workers + 1 judge = 3 HTTP calls
+// Node execution: 2 workers + 2 judges = 4 HTTP calls
 // ---------------------------------------------------------------------------
 
 function queryAndJudge(
@@ -111,6 +112,7 @@ function queryAndJudge(
   const answers: string[] = [];
   const confidences: number[] = [];
 
+  // Query 2 workers
   for (let i = 0; i < 2; i++) {
     const res = sr.sendRequest({
       url: config.openRouterUrl,
@@ -136,30 +138,37 @@ function queryAndJudge(
     confidences.push(clamp(p?.confidence, 5));
   }
 
-  const judgeRes = sr.sendRequest({
-    url: config.openRouterUrl,
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: toBase64(JSON.stringify({
-      model: config.judgeModel,
-      messages: [
-        { role: "system", content: "Score 1-10. JSON only." },
-        { role: "user", content: `Q:"${prompt}" A1:"${answers[0]}" A2:"${answers[1]}" Return:{"s1":N,"s2":N}` },
-      ],
-      temperature: 0.1,
-      max_tokens: config.judgeMaxTokens,
-    })),
-  }).result();
+  // Query 2 judges
+  const judgeScores: number[][] = [];
+  for (let j = 0; j < 2; j++) {
+    const judgeRes = sr.sendRequest({
+      url: config.openRouterUrl,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: toBase64(JSON.stringify({
+        model: config.judgeModels[j],
+        messages: [
+          { role: "system", content: "Score 1-10. JSON only." },
+          { role: "user", content: `Q:"${prompt}" A1:"${answers[0]}" A2:"${answers[1]}" Return:{"s1":N,"s2":N}` },
+        ],
+        temperature: 0.1,
+        max_tokens: config.judgeMaxTokens,
+      })),
+    }).result();
 
-  const jr = JSON.parse(bytesToString(judgeRes.body))?.choices?.[0]?.message?.content ?? "";
-  const jp = parseJson(jr);
+    const jr = JSON.parse(bytesToString(judgeRes.body))?.choices?.[0]?.message?.content ?? "";
+    const jp = parseJson(jr);
+    judgeScores.push([clamp(jp?.s1, 5), clamp(jp?.s2, 5)]);
+  }
 
   return {
-    score_0: clamp(jp?.s1, 5),
-    score_1: clamp(jp?.s2, 5),
+    score_j0_w0: judgeScores[0][0],
+    score_j0_w1: judgeScores[0][1],
+    score_j1_w0: judgeScores[1][0],
+    score_j1_w1: judgeScores[1][1],
     response_0: answers[0],
     response_1: answers[1],
     confidence_0: confidences[0],
@@ -168,8 +177,10 @@ function queryAndJudge(
 }
 
 const aggregation = ConsensusAggregationByFields<OracleNodeResult>({
-  score_0: median,
-  score_1: median,
+  score_j0_w0: median,
+  score_j0_w1: median,
+  score_j1_w0: median,
+  score_j1_w1: median,
   response_0: ignore,
   response_1: ignore,
   confidence_0: median,
@@ -195,8 +206,15 @@ function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): string {
     .sendRequest(runtime, queryAndJudge, aggregation)(cfg)
     .result();
 
-  const scores = [result.score_0, result.score_1];
-  const winnerIndex = scores[0] >= scores[1] ? 0 : 1;
+  // scores: [j0_w0, j0_w1, j1_w0, j1_w1]
+  const scores = [
+    result.score_j0_w0, result.score_j0_w1,
+    result.score_j1_w0, result.score_j1_w1,
+  ];
+
+  const avg0 = (result.score_j0_w0 + result.score_j1_w0) / 2;
+  const avg1 = (result.score_j0_w1 + result.score_j1_w1) / 2;
+  const winnerIndex = avg0 >= avg1 ? 0 : 1;
 
   runtime.log(`Scores: [${scores}]. Winner: ${runtime.config.workerModelNames[winnerIndex]}`);
 
@@ -207,7 +225,7 @@ function onHttpTrigger(runtime: Runtime<Config>, payload: HTTPPayload): string {
     responses: [result.response_0, result.response_1],
     confidences: [result.confidence_0, result.confidence_1],
     winnerIndex,
-    judgeModel: runtime.config.judgeModelName,
+    judgeModels: runtime.config.judgeModelNames,
     nodeCount: 5,
   });
 

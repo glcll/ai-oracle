@@ -9,7 +9,7 @@ async function callModel(
   systemPrompt: string,
   userPrompt: string,
   apiKey: string,
-  maxTokens = 128
+  maxTokens = 256
 ): Promise<string> {
   const res = await fetch(OPENROUTER_URL, {
     method: "POST",
@@ -65,9 +65,9 @@ export async function runOracleConsensusStreaming(
   }
 
   const submittedAt = new Date().toISOString();
-  const judge = JUDGE_MODELS[0];
 
   try {
+    // Phase 1: 2 workers generate answers in parallel
     send({
       type: "phase",
       phase: "generation",
@@ -95,50 +95,59 @@ export async function runOracleConsensusStreaming(
       };
     });
 
+    // Phase 2: 2 judges score both worker responses in parallel
     send({
       type: "phase",
       phase: "judging",
-      message: `${judge.name} evaluating responses...`,
+      message: `${JUDGE_MODELS.map((m) => m.name).join(" & ")} evaluating responses...`,
     });
 
     const answers = responses.map((r) => r.answer);
     const judgePromptText =
       `Q:"${prompt}" A1:"${answers[0]}" A2:"${answers[1]}" Return:{"s1":N,"s2":N}`;
 
-    const judgeResult = await callModel(
-      judge.openRouterId,
-      "Score each answer 1-10 for accuracy and clarity. Return only JSON.",
-      judgePromptText,
-      apiKey,
-      64
+    const judgeResults = await Promise.all(
+      JUDGE_MODELS.map(async (judge, i) => {
+        const result = await callModel(
+          judge.openRouterId,
+          "Score each answer 1-10 for accuracy and clarity. Return only JSON.",
+          judgePromptText,
+          apiKey,
+          64
+        );
+        send({ type: "model_done", phase: "judging", model: judge.id, index: i });
+        return result;
+      })
     );
-    send({ type: "model_done", phase: "judging", model: judge.id, index: 0 });
 
+    // Phase 3: Compute scores and winner
     send({ type: "phase", phase: "consensus", message: "Computing consensus..." });
-
-    const parsed = parseJsonResponse(judgeResult);
-    const scores = [
-      clampScore(parsed?.s1),
-      clampScore(parsed?.s2),
-    ];
 
     const scoreMatrix: ScoreMatrix = {};
     const avgScores: { [model: string]: number } = {};
 
-    for (let r = 0; r < 2; r++) {
-      const workerId = WORKER_MODELS[r].id;
-      scoreMatrix[workerId] = { judgedBy: { [judge.id]: scores[r] } };
-      avgScores[workerId] = scores[r];
+    for (let w = 0; w < WORKER_MODELS.length; w++) {
+      const workerId = WORKER_MODELS[w].id;
+      scoreMatrix[workerId] = { judgedBy: {} };
+      let total = 0;
+      for (let j = 0; j < JUDGE_MODELS.length; j++) {
+        const parsed = parseJsonResponse(judgeResults[j]);
+        const scoreKey = `s${w + 1}`;
+        const score = clampScore(parsed?.[scoreKey]);
+        scoreMatrix[workerId].judgedBy[JUDGE_MODELS[j].id] = score;
+        total += score;
+      }
+      avgScores[workerId] = Math.round((total / JUDGE_MODELS.length) * 100) / 100;
     }
 
-    const winningIndex = scores[0] >= scores[1] ? 0 : 1;
+    const winningIndex = avgScores[WORKER_MODELS[0].id] >= avgScores[WORKER_MODELS[1].id] ? 0 : 1;
     const completedAt = new Date().toISOString();
 
     const allResponses: ModelResponse[] = responses.map((r, i) => ({
       model: r.model,
       answer: r.answer,
       confidence: r.confidence,
-      avgScore: scores[i],
+      avgScore: avgScores[r.model],
     }));
 
     return {
@@ -152,7 +161,7 @@ export async function runOracleConsensusStreaming(
         averageScores: avgScores,
         scoreMatrix,
         nodeCount: 1,
-        consensusMethod: "median-aggregation-2w1j",
+        consensusMethod: "median-aggregation-2w2j",
       },
       allResponses,
       timing: {

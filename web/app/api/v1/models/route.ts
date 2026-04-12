@@ -15,7 +15,7 @@ export async function GET() {
       provider: m.provider,
       openRouterId: m.openRouterId,
     })),
-    judgingMethod: "Single judge (GPT-4o Mini) scores both worker responses 1-10",
-    consensusMethod: "median-aggregation across DON nodes (2 workers + 1 judge)",
+    judgingMethod: "2 independent judges (GPT-4o Mini, Qwen Turbo) score both worker responses 1-10",
+    consensusMethod: "median-aggregation across DON nodes (2 workers + 2 judges)",
   });
 }
