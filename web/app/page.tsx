@@ -48,8 +48,8 @@ function Hero() {
       </h1>
 
       <p className="mt-[var(--space-6x)] text-lg max-w-2xl leading-relaxed text-muted-foreground">
-        Send a prompt to the Chainlink oracle network. 3 AI models respond, 3 judges
-        cross-evaluate, and DON nodes reach consensus on the best answer. One API call.
+        Send a prompt to the Chainlink oracle network. 3 worker models respond, 3 independent
+        judge models cross-evaluate, and DON nodes reach consensus on the best answer. One API call.
       </p>
 
       <div className="flex gap-[var(--space-4x)] mt-[var(--space-10x)]">
@@ -103,7 +103,7 @@ function HowItWorks() {
     {
       step: "2",
       title: "Evaluate",
-      description: "3 AI models respond independently. Each model then judges all 3 responses on a 1-10 scale, producing a 3x3 scoring matrix.",
+      description: "3 worker models (Qwen 3.6 Plus, DeepSeek V3.2, Gemini 2.5 Flash) respond independently. Then 3 separate judge models (Gemini 2.5 Pro, MiniMax M2.7, GPT-4o Mini) score all responses on a 1-10 scale.",
       bg: "bg-warning",
       border: "border-warning-border",
       fg: "text-warning-foreground",
@@ -152,7 +152,7 @@ function HowItWorks() {
             3x3 Scoring Matrix
           </h3>
           <p className="text-sm mb-[var(--space-4x)] text-muted-foreground">
-            Each model generates a response, then acts as an impartial judge of all three responses.
+            3 worker models generate responses, then 3 independent judge models score each response.
             The highest average score wins.
           </p>
           <div className="overflow-x-auto">
@@ -160,16 +160,16 @@ function HowItWorks() {
               <thead>
                 <tr className="text-muted-foreground">
                   <th className="text-left py-[var(--space-2x)] pr-[var(--space-4x)]"></th>
-                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">Model A</th>
-                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">Model B</th>
-                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">Model C</th>
+                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">Qwen 3.6+</th>
+                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">DeepSeek V3.2</th>
+                  <th className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">Gemini Flash</th>
                 </tr>
               </thead>
               <tbody className="text-foreground">
                 {[
-                  { judge: "Judge: A", scores: [7, 8, 6] },
-                  { judge: "Judge: B", scores: [8, 9, 7] },
-                  { judge: "Judge: C", scores: [7, 8, 5] },
+                  { judge: "Gemini 2.5 Pro", scores: [7, 8, 6] },
+                  { judge: "MiniMax M2.7", scores: [8, 9, 7] },
+                  { judge: "GPT-4o Mini", scores: [7, 8, 5] },
                 ].map((row) => (
                   <tr key={row.judge} className="border-t border-border-muted">
                     <td className="py-[var(--space-2x)] pr-[var(--space-4x)] text-left text-muted-foreground">
@@ -363,40 +363,80 @@ function WhyCRE() {
 }
 
 function Models() {
-  const models = [
-    { name: "Nemotron Nano 9B", provider: "NVIDIA", role: "Fast inference" },
-    { name: "Nemotron 3 Nano 30B", provider: "NVIDIA", role: "Reasoning" },
-    { name: "LFM 2.5 1.2B", provider: "Liquid", role: "Lightweight" },
+  const workers = [
+    { name: "Qwen 3.6 Plus", provider: "Alibaba", role: "Worker" },
+    { name: "DeepSeek V3.2", provider: "DeepSeek", role: "Worker" },
+    { name: "Gemini 2.5 Flash", provider: "Google", role: "Worker" },
+  ];
+  const judges = [
+    { name: "Gemini 2.5 Pro", provider: "Google", role: "Judge" },
+    { name: "MiniMax M2.7", provider: "MiniMax", role: "Judge" },
+    { name: "GPT-4o Mini", provider: "OpenAI", role: "Judge" },
   ];
 
   return (
     <section className="px-[var(--space-6x)] py-[var(--space-16x)] bg-background-alt">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <h2 className="font-display text-3xl font-bold text-center mb-[var(--space-4x)] text-foreground">
           The Oracle Council
         </h2>
-        <p className="text-center text-base mb-[var(--space-12x)] text-muted-foreground">
-          Three models. Each generates a response AND judges all responses. No single model decides.
+        <p className="text-center text-base mb-[var(--space-12x)] max-w-2xl mx-auto text-muted-foreground">
+          Six models, two roles. Workers generate answers independently.
+          Judges evaluate every response. No single model decides.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-[var(--space-6x)]">
-          {models.map((m) => (
-            <div
-              key={m.name}
-              className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card p-[var(--space-6x)] text-center"
-            >
-              <div className="w-12 h-12 mx-auto rounded-full flex items-center justify-center text-lg font-bold mb-[var(--space-4x)] bg-muted text-foreground">
-                {m.name[0]}
-              </div>
-              <h3 className="font-display text-base font-bold mb-[var(--space-1x)] text-foreground">
-                {m.name}
-              </h3>
-              <p className="text-xs mb-[var(--space-2x)] text-muted-foreground">{m.provider}</p>
-              <span className="inline-flex items-center rounded-[1.5rem] border border-border bg-muted px-[var(--space-3x)] py-[var(--space-1x)] text-xs font-medium text-foreground">
-                {m.role}
+        <div className="space-y-[var(--space-10x)]">
+          {/* Workers */}
+          <div>
+            <div className="flex items-center gap-[var(--space-3x)] mb-[var(--space-6x)]">
+              <span className="inline-flex items-center rounded-[1.5rem] border border-progress-border bg-progress text-progress-foreground px-[var(--space-3x)] py-[var(--space-1x)] text-xs font-bold">
+                Workers
               </span>
+              <span className="text-sm text-muted-foreground">Generate responses to your prompt</span>
             </div>
-          ))}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-[var(--space-6x)]">
+              {workers.map((m) => (
+                <div
+                  key={m.name}
+                  className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card p-[var(--space-6x)] text-center"
+                >
+                  <div className="w-12 h-12 mx-auto rounded-full flex items-center justify-center text-lg font-bold mb-[var(--space-4x)] bg-progress/30 text-progress-foreground border border-progress-border">
+                    {m.name[0]}
+                  </div>
+                  <h3 className="font-display text-base font-bold mb-[var(--space-1x)] text-foreground">
+                    {m.name}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">{m.provider}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Judges */}
+          <div>
+            <div className="flex items-center gap-[var(--space-3x)] mb-[var(--space-6x)]">
+              <span className="inline-flex items-center rounded-[1.5rem] border border-warning-border bg-warning text-warning-foreground px-[var(--space-3x)] py-[var(--space-1x)] text-xs font-bold">
+                Judges
+              </span>
+              <span className="text-sm text-muted-foreground">Score every worker response 1-10</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-[var(--space-6x)]">
+              {judges.map((m) => (
+                <div
+                  key={m.name}
+                  className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card p-[var(--space-6x)] text-center"
+                >
+                  <div className="w-12 h-12 mx-auto rounded-full flex items-center justify-center text-lg font-bold mb-[var(--space-4x)] bg-warning/30 text-warning-foreground border border-warning-border">
+                    {m.name[0]}
+                  </div>
+                  <h3 className="font-display text-base font-bold mb-[var(--space-1x)] text-foreground">
+                    {m.name}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">{m.provider}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>

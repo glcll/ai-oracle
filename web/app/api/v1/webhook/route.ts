@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { setResult } from "@/lib/kv";
-import { MODELS, type ScoreMatrix, type ModelResponse } from "@/lib/types";
+import { WORKER_MODELS, JUDGE_MODELS, type ScoreMatrix, type ModelResponse } from "@/lib/types";
 
 export async function POST(request: Request) {
   const webhookSecret = process.env.WEBHOOK_SECRET;
@@ -40,22 +40,22 @@ export async function POST(request: Request) {
   for (let j = 0; j < 3; j++) {
     for (let r = 0; r < 3; r++) {
       const score = scores[j * 3 + r];
-      const respondentId = MODELS[r].id;
+      const respondentId = WORKER_MODELS[r].id;
       if (!scoreMatrix[respondentId]) {
         scoreMatrix[respondentId] = { judgedBy: {} };
       }
-      scoreMatrix[respondentId].judgedBy[MODELS[j].id] = score;
+      scoreMatrix[respondentId].judgedBy[JUDGE_MODELS[j].id] = score;
       totals[r] += score;
     }
   }
 
   for (let r = 0; r < 3; r++) {
-    avgScores[MODELS[r].id] = Math.round((totals[r] / 3) * 100) / 100;
+    avgScores[WORKER_MODELS[r].id] = Math.round((totals[r] / 3) * 100) / 100;
   }
 
   const winningIndex = totals.indexOf(Math.max(...totals));
 
-  const allResponses: ModelResponse[] = MODELS.map((m, i) => ({
+  const allResponses: ModelResponse[] = WORKER_MODELS.map((m, i) => ({
     model: m.id,
     answer: responses[i],
     confidence: confidences?.[i] ?? 5,
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     prompt,
     response: responses[winningIndex],
     consensus: {
-      winningModel: MODELS[winningIndex].id,
+      winningModel: WORKER_MODELS[winningIndex].id,
       winningIndex,
       averageScores: avgScores,
       scoreMatrix,

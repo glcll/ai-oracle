@@ -1,6 +1,6 @@
 import { generateRequestId, setResult } from "@/lib/kv";
 import { runOracleConsensusStreaming } from "@/lib/oracle-engine";
-import { MODELS } from "@/lib/types";
+import { WORKER_MODELS, JUDGE_MODELS } from "@/lib/types";
 
 export const maxDuration = 60;
 
@@ -40,7 +40,8 @@ export async function POST(request: Request) {
       send({
         type: "started",
         requestId,
-        models: MODELS.map((m) => m.id),
+        workerModels: WORKER_MODELS.map((m) => m.id),
+        judgeModels: JUDGE_MODELS.map((m) => m.id),
       });
 
       try {

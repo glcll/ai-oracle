@@ -1,11 +1,17 @@
 {
   "openRouterUrl": "https://openrouter.ai/api/v1/chat/completions",
-  "models": [
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "google/gemma-3-27b-it:free",
-    "qwen/qwen3-next-80b-a3b-instruct:free"
+  "workerModels": [
+    "qwen/qwen3.6-plus",
+    "deepseek/deepseek-v3.2",
+    "google/gemini-2.5-flash"
   ],
-  "modelNames": ["llama-3.3-70b", "gemma-3-27b", "qwen3-next-80b"],
+  "workerModelNames": ["qwen3.6-plus", "deepseek-v3.2", "gemini-2.5-flash"],
+  "judgeModels": [
+    "google/gemini-2.5-pro",
+    "minimax/minimax-m2.7",
+    "openai/gpt-4o-mini"
+  ],
+  "judgeModelNames": ["gemini-2.5-pro", "minimax-m2.7", "gpt-4o-mini"],
   "webhookUrl": "https://web-inky-one-56.vercel.app/api/v1/webhook",
   "temperature": 0.3,
   "maxTokens": 1024,

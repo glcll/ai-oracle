@@ -1,25 +1,51 @@
-export const MODELS = [
-  {
-    id: "nemotron-nano-9b",
-    name: "Nemotron Nano 9B",
-    openRouterId: "nvidia/nemotron-nano-9b-v2:free",
-    provider: "NVIDIA",
-  },
-  {
-    id: "nemotron-nano-30b",
-    name: "Nemotron 3 Nano 30B",
-    openRouterId: "nvidia/nemotron-3-nano-30b-a3b:free",
-    provider: "NVIDIA",
-  },
-  {
-    id: "lfm-1.2b",
-    name: "LFM 2.5 1.2B",
-    openRouterId: "liquid/lfm-2.5-1.2b-instruct:free",
-    provider: "Liquid",
-  },
-] as const;
+export interface ModelDef {
+  id: string;
+  name: string;
+  openRouterId: string;
+  provider: string;
+}
 
-export type ModelId = (typeof MODELS)[number]["id"];
+export const WORKER_MODELS: ModelDef[] = [
+  {
+    id: "qwen3.6-plus",
+    name: "Qwen 3.6 Plus",
+    openRouterId: "qwen/qwen3.6-plus",
+    provider: "Alibaba",
+  },
+  {
+    id: "deepseek-v3.2",
+    name: "DeepSeek V3.2",
+    openRouterId: "deepseek/deepseek-v3.2",
+    provider: "DeepSeek",
+  },
+  {
+    id: "gemini-2.5-flash",
+    name: "Gemini 2.5 Flash",
+    openRouterId: "google/gemini-2.5-flash",
+    provider: "Google",
+  },
+];
+
+export const JUDGE_MODELS: ModelDef[] = [
+  {
+    id: "gemini-2.5-pro",
+    name: "Gemini 2.5 Pro",
+    openRouterId: "google/gemini-2.5-pro",
+    provider: "Google",
+  },
+  {
+    id: "minimax-m2.7",
+    name: "MiniMax M2.7",
+    openRouterId: "minimax/minimax-m2.7",
+    provider: "MiniMax",
+  },
+  {
+    id: "gpt-4o-mini",
+    name: "GPT-4o Mini",
+    openRouterId: "openai/gpt-4o-mini",
+    provider: "OpenAI",
+  },
+];
 
 export interface AskRequest {
   prompt: string;

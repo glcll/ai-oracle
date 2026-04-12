@@ -109,7 +109,7 @@ export default function Playground() {
             Ask the Oracle Council
           </h1>
           <p className="text-sm mb-[var(--space-8x)] text-muted-foreground">
-            Your prompt will be answered by 3 AI models, cross-evaluated by 3 judges, and scored via decentralized consensus.
+            Your prompt will be answered by 3 worker models, scored by 3 independent judge models, and resolved via decentralized consensus.
           </p>
 
           {/* Input */}

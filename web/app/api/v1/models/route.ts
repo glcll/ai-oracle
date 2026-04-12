@@ -1,15 +1,21 @@
 import { NextResponse } from "next/server";
-import { MODELS } from "@/lib/types";
+import { WORKER_MODELS, JUDGE_MODELS } from "@/lib/types";
 
 export async function GET() {
   return NextResponse.json({
-    models: MODELS.map((m) => ({
+    workerModels: WORKER_MODELS.map((m) => ({
       id: m.id,
       name: m.name,
       provider: m.provider,
       openRouterId: m.openRouterId,
     })),
-    judgingMethod: "3x3 cross-evaluation matrix",
+    judgeModels: JUDGE_MODELS.map((m) => ({
+      id: m.id,
+      name: m.name,
+      provider: m.provider,
+      openRouterId: m.openRouterId,
+    })),
+    judgingMethod: "3x3 cross-evaluation matrix (3 independent judges score 3 worker responses)",
     consensusMethod: "median-aggregation across DON nodes",
   });
 }
