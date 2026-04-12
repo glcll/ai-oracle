@@ -2,9 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { OracleResult } from "@/lib/types";
+import { WORKER_MODELS, JUDGE_MODELS, type OracleResult } from "@/lib/types";
 
 type Phase = "idle" | "submitting" | "querying" | "evaluating" | "consensus" | "done" | "error";
+
+const MODEL_NAMES: Record<string, string> = Object.fromEntries(
+  [...WORKER_MODELS, ...JUDGE_MODELS].map((m) => [m.id, m.name])
+);
 
 const PHASE_LABELS: Record<Phase, string> = {
   idle: "",
@@ -161,7 +165,7 @@ export default function Playground() {
                     Winner
                   </span>
                   <span className="text-sm font-medium text-foreground">
-                    {result.consensus?.winningModel}
+                    {MODEL_NAMES[result.consensus?.winningModel ?? ""] ?? result.consensus?.winningModel}
                   </span>
                 </div>
                 <p className="text-base leading-relaxed whitespace-pre-wrap text-foreground">
@@ -187,19 +191,19 @@ export default function Playground() {
                           <th className="text-left py-[var(--space-2x)] pr-[var(--space-4x)]"></th>
                           {result.allResponses?.map((r) => (
                             <th key={r.model} className="text-center py-[var(--space-2x)] px-[var(--space-3x)]">
-                              {r.model}
+                              {MODEL_NAMES[r.model] ?? r.model}
                             </th>
                           ))}
                         </tr>
                       </thead>
                       <tbody className="text-foreground">
-                        {result.allResponses?.map((judge) => (
-                          <tr key={`judge-${judge.model}`} className="border-t border-border-muted">
+                        {JUDGE_MODELS.map((judge) => (
+                          <tr key={`judge-${judge.id}`} className="border-t border-border-muted">
                             <td className="py-[var(--space-2x)] pr-[var(--space-4x)] whitespace-nowrap text-muted-foreground">
-                              Judge: {judge.model}
+                              {judge.name}
                             </td>
                             {result.allResponses?.map((respondent) => {
-                              const score = result.consensus?.scoreMatrix?.[respondent.model]?.judgedBy?.[judge.model];
+                              const score = result.consensus?.scoreMatrix?.[respondent.model]?.judgedBy?.[judge.id];
                               const isWinner = respondent.model === result.consensus?.winningModel;
                               return (
                                 <td
@@ -252,7 +256,7 @@ export default function Playground() {
                       className="w-full flex items-center justify-between p-[var(--space-4x)] px-[var(--space-6x)] cursor-pointer text-left hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex items-center gap-[var(--space-3x)]">
-                        <span className="text-sm font-medium text-foreground">{r.model}</span>
+                        <span className="text-sm font-medium text-foreground">{MODEL_NAMES[r.model] ?? r.model}</span>
                         {r.model === result.consensus?.winningModel && (
                           <span className="inline-flex items-center rounded-[1.5rem] border border-success-border bg-success text-success-foreground px-[var(--space-2x)] py-0.5 text-xxs font-bold">
                             Winner
