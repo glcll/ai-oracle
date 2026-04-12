@@ -73,7 +73,7 @@ function Hero() {
         </div>
         <pre className="p-[var(--space-4x)] overflow-x-auto">
           <code className="font-mono text-sm text-foreground">
-{`curl -X POST https://ai-oracle.vercel.app/api/v1/ask \\
+{`curl -X POST https://ai-oracle-council.vercel.app/api/v1/ask \\
   -H "Content-Type: application/json" \\
   -d '{"prompt": "What causes auroras?"}'
 
