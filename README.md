@@ -1,41 +1,57 @@
-# AI Oracle
+# AI Oracle Council
 
-Decentralized AI inference with oracle consensus, powered by Chainlink CRE.
+One API call. Multiple AI models. Independently verified. Provably fair.
 
-Send a prompt to the Chainlink oracle network. 3 AI models respond, 3 judges cross-evaluate with a 3x3 scoring matrix, and DON nodes reach BFT consensus on the scores. The response with the highest average score wins.
+Send a prompt to the AI Oracle Council. 2 worker models generate independent responses, 2 judges score each response, and Chainlink DON nodes reach cryptographic consensus on the best answer.
 
-## Architecture
+**Live demo**: [ai-oracle-council.vercel.app](https://ai-oracle-council.vercel.app)
 
-```
-User  -->  POST /api/v1/ask  -->  CRE Gateway  -->  DON Nodes (x5+)
-                                                        |
-                                                  Each node independently:
-                                                  1. Queries 3 models on OpenRouter
-                                                  2. Each model judges all 3 responses
-                                                  3. Produces 3x3 score matrix
-                                                        |
-                                                  BFT Consensus (median per score)
-                                                        |
-User  <--  GET /api/v1/result/:id  <--  Webhook  <--  Signed report
-```
-
-### Consensus Algorithm: 3-Judge Scoring Matrix
-
-Each DON node independently:
-
-1. **Generates** responses from 3 AI models (Llama 3.3 70B, DeepSeek R1, Qwen3 80B)
-2. **Cross-evaluates** by having each model score all 3 responses (1-10 scale)
-3. **Produces** a 3x3 scoring matrix (9 scores total)
-
-The DON reaches consensus via `median` aggregation on each of the 9 scores across all nodes. The response with the highest average score across all 3 judges wins.
+## How It Works
 
 ```
-                Llama    DeepSeek    Qwen3
-Judge Llama:      7         8          6
-Judge DeepSeek:   8         9          7
-Judge Qwen3:      7         8          5
-              --------  ---------  --------
-Average:        7.33      8.33       6.00   -->  Winner: DeepSeek R1
+POST /api/v1/ask { "prompt": "What causes auroras?" }
+         │
+         ▼
+┌─────────────────────────────────────────────────┐
+│  Local Oracle Engine (primary, streaming)        │
+│                                                  │
+│  1. Query 2 workers in parallel                  │
+│     ├── Gemini 2.5 Flash (Google)               │
+│     └── GLM-5 Turbo (Zhipu AI)                  │
+│                                                  │
+│  2. Query 2 judges in parallel                   │
+│     ├── GPT-4o Mini (OpenAI)                    │
+│     └── Qwen Turbo (Alibaba)                    │
+│                                                  │
+│  3. Compute 2×2 scoring matrix                   │
+│     → Average scores → Pick winner              │
+│                                                  │
+│  4. Stream results to client via SSE             │
+└─────────────────────────────────────────────────┘
+         │
+         │  (async, non-blocking)
+         ▼
+┌─────────────────────────────────────────────────┐
+│  CRE Workflow (background attestation)           │
+│                                                  │
+│  Same 2W+2J computation runs on DON nodes.       │
+│  Each node independently queries models,         │
+│  scores responses, and participates in BFT       │
+│  consensus (median aggregation on scores).       │
+│  Result is cryptographically signed.             │
+└─────────────────────────────────────────────────┘
+```
+
+### Scoring Matrix
+
+Each judge scores each worker's response on a 1–10 scale. The worker with the highest average score wins.
+
+```
+                Gemini Flash    GLM-5 Turbo
+GPT-4o Mini:        8               7
+Qwen Turbo:         9               7
+              ──────────      ──────────
+Average:           8.5             7.0     →  Winner: Gemini 2.5 Flash
 ```
 
 ## Quick Start
@@ -43,7 +59,8 @@ Average:        7.33      8.33       6.00   -->  Winner: DeepSeek R1
 ### 1. Clone and install
 
 ```bash
-cd web
+git clone https://github.com/glcll/ai-oracle.git
+cd ai-oracle/web
 npm install
 ```
 
@@ -51,10 +68,13 @@ npm install
 
 ```bash
 cp .env.local.example .env.local
-# Edit .env.local and add your OPENROUTER_API_KEY
 ```
 
-Get a free API key at [openrouter.ai](https://openrouter.ai). The default models are all free tier.
+Add your [OpenRouter API key](https://openrouter.ai) to `.env.local`:
+
+```
+OPENROUTER_API_KEY=sk-or-v1-your-key-here
+```
 
 ### 3. Run locally
 
@@ -62,36 +82,27 @@ Get a free API key at [openrouter.ai](https://openrouter.ai). The default models
 npm run dev
 ```
 
-Open http://localhost:3000 to see the landing page, or go to http://localhost:3000/playground to try it.
+Open [localhost:3000](http://localhost:3000) for the landing page, or [localhost:3000/playground](http://localhost:3000/playground) to try it.
 
-Without CRE configured, the app runs a local oracle engine that simulates the 3-model + 3-judge consensus pipeline directly via OpenRouter.
+Without CRE configured, the app runs a local oracle engine that performs the full 2-worker + 2-judge consensus pipeline via OpenRouter.
 
 ## API
 
 ### `POST /api/v1/ask`
 
-Submit a prompt for oracle consensus.
+Submit a prompt. Returns an SSE stream with real-time progress and the consensus result.
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/ask \
+curl -X POST https://ai-oracle-council.vercel.app/api/v1/ask \
   -H "Content-Type: application/json" \
   -d '{"prompt": "What causes auroras?"}'
 ```
 
-Response (202):
-
-```json
-{
-  "requestId": "req_k8m2x9p1ab3c",
-  "status": "pending",
-  "statusUrl": "/api/v1/result/req_k8m2x9p1ab3c",
-  "models": ["llama-3.3-70b", "deepseek-r1-0528", "qwen3-next-80b"]
-}
-```
+The stream emits events: `started` → `phase` (generation) → `phase` (judging) → `phase` (consensus) → `complete` with the full `OracleResult`.
 
 ### `GET /api/v1/result/:id`
 
-Poll for the consensus result.
+Retrieve a cached consensus result by request ID.
 
 ```json
 {
@@ -99,24 +110,48 @@ Poll for the consensus result.
   "status": "completed",
   "response": "Auroras are caused by...",
   "consensus": {
-    "winningModel": "deepseek-r1-0528",
-    "winningIndex": 1,
-    "averageScores": {
-      "llama-3.3-70b": 7.33,
-      "deepseek-r1-0528": 8.33,
-      "qwen3-next-80b": 6.0
-    },
+    "winningModel": "gemini-2.5-flash",
+    "averageScores": { "gemini-2.5-flash": 8.5, "glm-5-turbo": 7.0 },
     "scoreMatrix": { ... },
-    "nodeCount": 5,
-    "consensusMethod": "median-aggregation-3x3"
+    "consensusMethod": "median-aggregation-2w2j"
   },
-  "allResponses": [ ... ]
+  "allResponses": [
+    { "model": "gemini-2.5-flash", "answer": "...", "avgScore": 8.5 },
+    { "model": "glm-5-turbo", "answer": "...", "avgScore": 7.0 }
+  ]
 }
 ```
 
 ### `GET /api/v1/models`
 
-List the AI models in the oracle council.
+List the worker and judge models in the oracle council.
+
+## Architecture
+
+The app uses a **dual execution path**:
+
+- **Local oracle engine** (primary): Runs on Vercel, streams results via SSE. Handles the user-facing experience with real-time progress and full response text.
+- **CRE workflow** (background): Triggers the same computation on Chainlink's decentralized oracle network. Provides cryptographic attestation that the scoring was fair and tamper-proof.
+
+This architecture exists because CRE's consensus protocol uses `ignore` aggregation for string fields, which drops the actual LLM response text during median consensus. The local engine guarantees full text delivery while CRE handles verification.
+
+### Why two paths?
+
+| Concern | Local Engine | CRE |
+|---------|-------------|-----|
+| Response text | Full text, streamed | Dropped by consensus (`ignore` aggregation) |
+| Latency | 3–8s, progressive | 10–30s, all-or-nothing |
+| Trust model | Trust the operator | Trust the DON (cryptographic) |
+| Scoring integrity | Operator-controlled | Tamper-proof, median-aggregated |
+
+## Models
+
+| Model | Provider | Role | OpenRouter ID |
+|-------|----------|------|---------------|
+| Gemini 2.5 Flash | Google | Worker | `google/gemini-2.5-flash` |
+| GLM-5 Turbo | Zhipu AI | Worker | `z-ai/glm-5-turbo` |
+| GPT-4o Mini | OpenAI | Judge | `openai/gpt-4o-mini` |
+| Qwen Turbo | Alibaba | Judge | `qwen/qwen-turbo` |
 
 ## Project Structure
 
@@ -124,58 +159,50 @@ List the AI models in the oracle council.
 ai-oracle/
 ├── web/                          Next.js app (Vercel)
 │   ├── app/
-│   │   ├── page.tsx             Landing page
-│   │   ├── playground/page.tsx  Interactive playground
-│   │   └── api/v1/             API routes
+│   │   ├── page.tsx              Landing page
+│   │   ├── playground/page.tsx   Interactive playground
+│   │   └── api/v1/              API routes (ask, result, models, webhook)
 │   └── lib/
-│       ├── cre-trigger.ts      ETH-signed JWT + CRE gateway
-│       ├── oracle-engine.ts    Local oracle simulation
-│       ├── kv.ts               State management
-│       └── types.ts            Shared types
-├── cre-workflow/                 CRE TypeScript workflow
-│   ├── ai-oracle/
-│   │   ├── main.ts             Workflow entry point
-│   │   ├── workflow.yaml       Metadata + targets
-│   │   ├── config.json         Model config (simulation)
-│   │   └── secrets.yaml        Secret declarations
-│   └── project.yaml            RPC configs
+│       ├── oracle-engine.ts      Local 2W+2J consensus engine
+│       ├── cre-trigger.ts        ETH-signed JWT → CRE gateway
+│       ├── kv.ts                 Redis/in-memory result store
+│       └── types.ts              Shared types & model definitions
+├── cre-workflow/                  CRE TypeScript workflow
+│   └── ai-oracle/
+│       ├── main.ts               Workflow: 2W+2J scoring + webhook
+│       ├── config.staging.json   Production model config
+│       └── workflow.yaml         CRE metadata & targets
 └── README.md
 ```
 
 ## Deploying the CRE Workflow
 
-Prerequisites: CRE CLI installed, CRE organization account, linked wallet.
+Optional. The app works fully without CRE — the local engine handles everything.
+
+Prerequisites: [CRE CLI](https://docs.chain.link/cre) installed, CRE organization account, linked wallet.
 
 ```bash
 cd cre-workflow
-
-# Test locally
-cre workflow simulate ai-oracle --target simulation
-
-# Deploy
+cre workflow build ai-oracle
 cre workflow deploy ai-oracle --target staging
 ```
 
-After deploying, set these env vars in Vercel:
+Then set these environment variables in Vercel:
 
-- `CRE_GATEWAY_URL` — `https://01.gateway.zone-a.cre.chain.link`
-- `CRE_WORKFLOW_ID` — from the deploy output
-- `CRE_PRIVATE_KEY` — linked wallet private key
+| Variable | Value |
+|----------|-------|
+| `CRE_GATEWAY_URL` | `https://01.gateway.zone-a.cre.chain.link` |
+| `CRE_WORKFLOW_ID` | From deploy output |
+| `CRE_PRIVATE_KEY` | Linked wallet private key |
+| `WEBHOOK_SECRET` | Random hex for webhook auth |
 
-## Models
+## Built With
 
-All three models are free on OpenRouter (20 req/min, 200 req/day):
-
-| Model | OpenRouter ID | Role |
-|-------|--------------|------|
-| Llama 3.3 70B | `meta-llama/llama-3.3-70b-instruct:free` | General purpose |
-| DeepSeek R1 0528 | `deepseek/deepseek-r1-0528:free` | Reasoning |
-| Qwen3-Next 80B | `qwen/qwen3-next-80b:free` | Broad capabilities |
-
-## Rate Limits
-
-- Anonymous: 5 requests/hour
-- Free tier models: ~6-7 user requests/day (6 model calls per request x DON nodes)
+- [Next.js](https://nextjs.org) — App framework
+- [Chainlink CRE](https://docs.chain.link/cre) — Decentralized oracle execution
+- [OpenRouter](https://openrouter.ai) — Multi-model AI inference
+- [Vercel](https://vercel.com) — Hosting & serverless functions
+- [Chainlink Blocks](https://www.npmjs.com/package/@chainlink/blocks) — Design system
 
 ## License
 
