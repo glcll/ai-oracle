@@ -13,7 +13,7 @@ const MODEL_NAMES: Record<string, string> = Object.fromEntries(
 const PHASE_LABELS: Record<Phase, string> = {
   idle: "",
   submitting: "Connecting to oracle network...",
-  querying: "Querying 2 worker models via OpenRouter...",
+  querying: "Querying 2 worker models...",
   evaluating: `${JUDGE_MODELS.map((j) => j.name).join(" & ")} evaluating both responses...`,
   consensus: "Computing consensus scores...",
   done: "Consensus reached!",
@@ -139,6 +139,15 @@ export default function Playground() {
   };
 
   const isProcessing = phase !== "idle" && phase !== "done" && phase !== "error";
+  const isFinished = phase === "done" || phase === "error";
+
+  const handleStartOver = () => {
+    setPrompt("");
+    setPhase("idle");
+    setResult(null);
+    setError(null);
+    setCollapsedModel(null);
+  };
 
   return (
     <div className="min-h-full flex flex-col bg-background">
@@ -151,7 +160,7 @@ export default function Playground() {
               <path d="M12 6v6l4 2" />
             </svg>
           </div>
-          <span className="font-display text-lg font-bold text-foreground">AI Oracle</span>
+          <span className="font-display text-lg font-bold text-foreground">AI Oracle Council</span>
         </Link>
         <div className="flex items-center gap-[var(--space-6x)]">
           <Link href="/#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
@@ -190,7 +199,7 @@ export default function Playground() {
               placeholder="What causes auroras?"
               rows={3}
               maxLength={2000}
-              disabled={isProcessing}
+              disabled={isProcessing || isFinished}
               className="w-full rounded-[var(--border-radius-secondary)] border border-input-border bg-input text-input-foreground p-[var(--space-4x)] text-base font-sans resize-none outline-none transition-colors focus:border-input-border-active"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -201,13 +210,22 @@ export default function Playground() {
             />
             <div className="flex items-center justify-between mt-[var(--space-2x)]">
               <span className="text-xs text-muted-foreground">{prompt.length}/2000</span>
-              <button
-                onClick={handleSubmit}
-                disabled={!prompt.trim() || isProcessing}
-                className="rounded-[var(--border-radius-primary)] px-[var(--space-6x)] py-[var(--space-2x)] text-sm font-medium bg-primary text-primary-foreground hover:bg-primary-hover transition-colors cursor-pointer disabled:bg-primary-disabled disabled:cursor-not-allowed"
-              >
-                {isProcessing ? "Processing..." : "Ask Oracle"}
-              </button>
+              {isFinished ? (
+                <button
+                  onClick={handleStartOver}
+                  className="rounded-[var(--border-radius-primary)] px-[var(--space-6x)] py-[var(--space-2x)] text-sm font-medium border border-border text-foreground hover:bg-muted transition-colors cursor-pointer"
+                >
+                  Start over
+                </button>
+              ) : (
+                <button
+                  onClick={handleSubmit}
+                  disabled={!prompt.trim() || isProcessing}
+                  className="rounded-[var(--border-radius-primary)] px-[var(--space-6x)] py-[var(--space-2x)] text-sm font-medium bg-primary text-primary-foreground hover:bg-primary-hover transition-colors cursor-pointer disabled:bg-primary-disabled disabled:cursor-not-allowed"
+                >
+                  {isProcessing ? "Processing..." : "Ask Council"}
+                </button>
+              )}
             </div>
           </div>
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CopyButton } from "./components/copy-button";
 
 function Nav() {
   return (
@@ -10,7 +11,7 @@ function Nav() {
             <path d="M12 6v6l4 2" />
           </svg>
         </div>
-        <span className="font-display text-lg font-bold text-foreground">AI Oracle</span>
+        <span className="font-display text-lg font-bold text-foreground">AI Oracle Council</span>
       </div>
       <div className="flex items-center gap-[var(--space-6x)]">
         <Link href="#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
@@ -68,21 +69,15 @@ function Hero() {
       </div>
 
       <div className="mt-[var(--space-12x)] w-full max-w-2xl rounded-[var(--border-radius-secondary)] border border-card-border bg-card text-left overflow-hidden">
-        <div className="flex items-center gap-[var(--space-2x)] px-[var(--space-4x)] py-[var(--space-3x)] border-b border-border bg-muted">
-          <span className="font-mono text-xs text-muted-foreground">ask-oracle.sh</span>
+        <div className="flex items-center justify-between px-[var(--space-4x)] py-[var(--space-3x)] border-b border-border bg-muted">
+          <span className="font-mono text-xs text-muted-foreground">ask-council.sh</span>
+          <CopyButton text={`curl -X POST https://ai-oracle-council.vercel.app/api/v1/ask \\\n  -H "Content-Type: application/json" \\\n  -d '{"prompt": "What causes auroras?"}'`} />
         </div>
-        <pre className="p-[var(--space-4x)] overflow-x-auto">
+        <pre className="p-[var(--space-4x)] overflow-x-auto select-all">
           <code className="font-mono text-sm text-foreground">
 {`curl -X POST https://ai-oracle-council.vercel.app/api/v1/ask \\
   -H "Content-Type: application/json" \\
-  -d '{"prompt": "What causes auroras?"}'
-
-# Response:
-{
-  "requestId": "req_k8m2x9p1",
-  "status": "pending",
-  "statusUrl": "/api/v1/result/req_k8m2x9p1"
-}`}
+  -d '{"prompt": "What causes auroras?"}'`}
           </code>
         </pre>
       </div>
