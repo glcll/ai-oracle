@@ -153,6 +153,20 @@ This architecture exists because CRE's consensus protocol uses `ignore` aggregat
 | GPT-4o Mini | OpenAI | Judge | `openai/gpt-4o-mini` |
 | Qwen Turbo | Alibaba | Judge | `qwen/qwen-turbo` |
 
+## AI Agent Skill
+
+Give your AI agent access to the Oracle Council. The skill teaches agents how to query the API, parse SSE streams, and use the consensus-scored results.
+
+### Install (Cursor)
+
+```bash
+mkdir -p ~/.cursor/skills/ai-oracle-council
+curl -sL https://raw.githubusercontent.com/glcll/ai-oracle/main/skill/SKILL.md \
+  -o ~/.cursor/skills/ai-oracle-council/SKILL.md
+```
+
+Once installed, your agent can query the Oracle Council when it needs a verified, multi-model AI answer. See [`skill/SKILL.md`](skill/SKILL.md) for the full skill reference.
+
 ## Project Structure
 
 ```
@@ -172,6 +186,8 @@ ai-oracle/
 │       ├── main.ts               Workflow: 2W+2J scoring + webhook
 │       ├── config.staging.json   Production model config
 │       └── workflow.yaml         CRE metadata & targets
+├── skill/
+│   └── SKILL.md                  AI agent skill (Cursor-compatible)
 └── README.md
 ```
 
