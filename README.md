@@ -155,17 +155,17 @@ This architecture exists because CRE's consensus protocol uses `ignore` aggregat
 
 ## AI Agent Skill
 
-Give your AI agent access to the Oracle Council. The skill teaches agents how to query the API, parse SSE streams, and use the consensus-scored results.
+Give your AI agent access to the Oracle Council. The skill teaches agents how to query the API, parse SSE streams, and use the consensus-scored results. Available on [skills.sh](https://skills.sh).
 
-### Install (Cursor)
+### Install
 
 ```bash
-mkdir -p ~/.cursor/skills/ai-oracle-council
-curl -sL https://raw.githubusercontent.com/glcll/ai-oracle/main/skill/SKILL.md \
-  -o ~/.cursor/skills/ai-oracle-council/SKILL.md
+npx skills add glcll/ai-oracle
 ```
 
-Once installed, your agent can query the Oracle Council when it needs a verified, multi-model AI answer. See [`skill/SKILL.md`](skill/SKILL.md) for the full skill reference.
+Works with Cursor, Claude Code, Codex, Windsurf, Cline, and [40+ other agents](https://skills.sh). Once installed, your agent can query the Oracle Council when it needs a verified, multi-model AI answer.
+
+See [`skills/ai-oracle-council/SKILL.md`](skills/ai-oracle-council/SKILL.md) for the full skill reference.
 
 ## Project Structure
 
@@ -186,8 +186,9 @@ ai-oracle/
 │       ├── main.ts               Workflow: 2W+2J scoring + webhook
 │       ├── config.staging.json   Production model config
 │       └── workflow.yaml         CRE metadata & targets
-├── skill/
-│   └── SKILL.md                  AI agent skill (Cursor-compatible)
+├── skills/
+│   └── ai-oracle-council/
+│       └── SKILL.md              AI agent skill (skills.sh compatible)
 └── README.md
 ```
 

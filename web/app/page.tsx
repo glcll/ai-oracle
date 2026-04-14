@@ -422,10 +422,7 @@ function Models() {
 }
 
 function AgentSkill() {
-  const installCmd = `# Add to your Cursor skills
-mkdir -p ~/.cursor/skills/ai-oracle-council
-curl -sL https://raw.githubusercontent.com/glcll/ai-oracle/main/skill/SKILL.md \\
-  -o ~/.cursor/skills/ai-oracle-council/SKILL.md`;
+  const installCmd = `npx skills add glcll/ai-oracle`;
 
   const usageSnippet = `const res = await fetch(
   "https://ai-oracle-council.vercel.app/api/v1/ask",
@@ -486,9 +483,13 @@ curl -sL https://raw.githubusercontent.com/glcll/ai-oracle/main/skill/SKILL.md \
             AI Agent Skill
           </h2>
         </div>
-        <p className="text-center text-base mb-[var(--space-12x)] max-w-2xl mx-auto text-muted-foreground">
-          Give your AI agent access to verified, multi-model consensus. Install the skill and your agent
-          can query the Oracle Council directly.
+        <p className="text-center text-base mb-[var(--space-4x)] max-w-2xl mx-auto text-muted-foreground">
+          Give your AI agent access to verified, multi-model consensus. Install via{" "}
+          <a href="https://skills.sh" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">skills.sh</a>{" "}
+          and your agent can query the Oracle Council directly.
+        </p>
+        <p className="text-center text-xs mb-[var(--space-12x)] text-muted-foreground">
+          Works with Cursor, Claude Code, Codex, Windsurf, Cline, and 40+ other agents.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-[var(--space-6x)] mb-[var(--space-10x)]">
@@ -510,33 +511,44 @@ curl -sL https://raw.githubusercontent.com/glcll/ai-oracle/main/skill/SKILL.md \
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--space-6x)]">
-          {/* Install */}
-          <div className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card overflow-hidden">
-            <div className="flex items-center justify-between px-[var(--space-4x)] py-[var(--space-3x)] border-b border-border bg-muted">
-              <span className="font-mono text-xs text-muted-foreground">install-skill.sh</span>
-              <CopyButton text={installCmd} />
-            </div>
-            <pre className="p-[var(--space-4x)] overflow-x-auto">
-              <code className="font-mono text-xs text-foreground leading-relaxed">{installCmd}</code>
-            </pre>
+        {/* Install command */}
+        <div className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card overflow-hidden mb-[var(--space-6x)]">
+          <div className="flex items-center justify-between px-[var(--space-4x)] py-[var(--space-3x)] border-b border-border bg-muted">
+            <span className="font-mono text-xs text-muted-foreground">terminal</span>
+            <CopyButton text={installCmd} />
           </div>
-
-          {/* Usage */}
-          <div className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card overflow-hidden">
-            <div className="flex items-center justify-between px-[var(--space-4x)] py-[var(--space-3x)] border-b border-border bg-muted">
-              <span className="font-mono text-xs text-muted-foreground">usage.ts</span>
-              <CopyButton text={usageSnippet} />
-            </div>
-            <pre className="p-[var(--space-4x)] overflow-x-auto">
-              <code className="font-mono text-xs text-foreground leading-relaxed">{usageSnippet}</code>
-            </pre>
+          <div className="p-[var(--space-5x)] flex items-center">
+            <span className="font-mono text-sm text-muted-foreground select-none mr-[var(--space-2x)]">$</span>
+            <code className="font-mono text-sm text-foreground">{installCmd}</code>
           </div>
         </div>
 
-        <div className="mt-[var(--space-6x)] text-center">
+        {/* Usage snippet */}
+        <div className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card overflow-hidden">
+          <div className="flex items-center justify-between px-[var(--space-4x)] py-[var(--space-3x)] border-b border-border bg-muted">
+            <span className="font-mono text-xs text-muted-foreground">usage.ts</span>
+            <CopyButton text={usageSnippet} />
+          </div>
+          <pre className="p-[var(--space-4x)] overflow-x-auto">
+            <code className="font-mono text-xs text-foreground leading-relaxed">{usageSnippet}</code>
+          </pre>
+        </div>
+
+        <div className="flex items-center justify-center gap-[var(--space-6x)] mt-[var(--space-6x)]">
           <a
-            href="https://github.com/glcll/ai-oracle/blob/main/skill/SKILL.md"
+            href="https://skills.sh/?q=ai-oracle-council"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-[var(--space-2x)] text-sm font-medium text-link hover:underline"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" />
+            </svg>
+            View on skills.sh
+          </a>
+          <a
+            href="https://github.com/glcll/ai-oracle/blob/main/skills/ai-oracle-council/SKILL.md"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-[var(--space-2x)] text-sm font-medium text-link hover:underline"
@@ -544,7 +556,7 @@ curl -sL https://raw.githubusercontent.com/glcll/ai-oracle/main/skill/SKILL.md \
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
             </svg>
-            View full skill on GitHub
+            View on GitHub
           </a>
         </div>
       </div>
