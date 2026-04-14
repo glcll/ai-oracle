@@ -118,7 +118,7 @@ function HowItWorks() {
 
   return (
     <section id="how-it-works" className="px-[var(--space-6x)] py-[var(--space-16x)] bg-background-alt">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <h2 className="font-display text-3xl font-bold text-center mb-[var(--space-4x)] text-foreground">
           How it works
         </h2>
@@ -193,8 +193,8 @@ function HowItWorks() {
 
 function ApiReference() {
   return (
-    <section id="api" className="px-[var(--space-6x)] py-[var(--space-16x)]">
-      <div className="max-w-4xl mx-auto">
+    <section id="api" className="px-[var(--space-6x)] py-[var(--space-16x)] bg-background-alt">
+      <div className="max-w-5xl mx-auto">
         <h2 className="font-display text-3xl font-bold text-center mb-[var(--space-4x)] text-foreground">
           API Reference
         </h2>
@@ -424,22 +424,6 @@ function Models() {
 function AgentSkill() {
   const installCmd = `npx skills add glcll/ai-oracle`;
 
-  const usageSnippet = `const res = await fetch(
-  "https://ai-oracle-council.vercel.app/api/v1/ask",
-  {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      prompt: "What causes auroras?"
-    }),
-  }
-);
-
-// Parse SSE stream for the "complete" event
-// event.result.response → winning answer
-// event.result.allResponses → all model answers + scores
-// event.result.consensus.scoreMatrix → full 2×2 judge scores`;
-
   const features = [
     {
       icon: (
@@ -512,7 +496,7 @@ function AgentSkill() {
         </div>
 
         {/* Install command */}
-        <div className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card overflow-hidden mb-[var(--space-6x)]">
+        <div className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card overflow-hidden">
           <div className="flex items-center justify-between px-[var(--space-4x)] py-[var(--space-3x)] border-b border-border bg-muted">
             <span className="font-mono text-xs text-muted-foreground">terminal</span>
             <CopyButton text={installCmd} />
@@ -521,17 +505,6 @@ function AgentSkill() {
             <span className="font-mono text-sm text-muted-foreground select-none mr-[var(--space-2x)]">$</span>
             <code className="font-mono text-sm text-foreground">{installCmd}</code>
           </div>
-        </div>
-
-        {/* Usage snippet */}
-        <div className="rounded-[var(--border-radius-secondary)] border border-card-border bg-card overflow-hidden">
-          <div className="flex items-center justify-between px-[var(--space-4x)] py-[var(--space-3x)] border-b border-border bg-muted">
-            <span className="font-mono text-xs text-muted-foreground">usage.ts</span>
-            <CopyButton text={usageSnippet} />
-          </div>
-          <pre className="p-[var(--space-4x)] overflow-x-auto">
-            <code className="font-mono text-xs text-foreground leading-relaxed">{usageSnippet}</code>
-          </pre>
         </div>
 
         <div className="flex items-center justify-center gap-[var(--space-6x)] mt-[var(--space-6x)]">
