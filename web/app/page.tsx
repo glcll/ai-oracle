@@ -541,7 +541,16 @@ function Footer() {
   return (
     <footer className="px-[var(--space-6x)] py-[var(--space-8x)] border-t border-border text-center">
       <p className="text-xs text-muted-foreground">
-        Built on Chainlink CRE. Not affiliated with or endorsed by Chainlink Labs. Free proof of concept &mdash; use at your own risk.
+        Built by{" "}
+        <a
+          href="https://github.com/glcll"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-link hover:underline"
+        >
+          @glcll
+        </a>{" "}
+        with Chainlink CRE. Not affiliated with or endorsed by Chainlink Labs. Free proof of concept, use at your own risk.
       </p>
     </footer>
   );
